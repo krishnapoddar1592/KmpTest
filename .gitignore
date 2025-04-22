@@ -1,0 +1,111 @@
+# Kotlin/JVM
+.gradle
+shared/build/
+out/
+*.class
+*.log
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+hs_err_pid*
+
+# Gradle
+.gradle/
+gradle-app.setting
+!gradle-wrapper.jar
+.gradletasknamecache
+local.properties
+
+# IntelliJ IDEA / Android Studio
+.idea/
+*.iml
+*.iws
+*.ipr
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/gradle.xml
+.idea/assetWizardSettings.xml
+.idea/dictionaries
+.idea/libraries
+.idea/caches
+.navigation/
+captures/
+
+# Android
+*.apk
+*.aab
+*.ap_
+*.dex
+bin/
+gen/
+.externalNativeBuild/
+.cxx/
+*.keystore
+!debug.keystore
+google-services.json
+
+# iOS
+Pods/
+Podfile.lock
+xcuserdata/
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+*.xcworkspace
+!default.xcworkspace
+xcshareddata/
+*.moved-aside
+*.xccheckout
+*.xcscmblueprint
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+timeline.xctimeline
+playground.xcworkspace
+.build/
+DerivedData/
+GoogleService-Info.plist
+
+# Swift Package Manager
+.swiftpm
+.build/
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+
+# OS-specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Firebase
+firebase-debug.log
+firebaserc
+.firebase/
+ui-debug.log
+.runtimeconfig.json
+
+# KMP
+.konan/
+*.framework/
+
+# Sensitive data (uncomment if needed)
+# */src/main/res/values/secrets.xml
+# */src/main/assets/secrets.json
