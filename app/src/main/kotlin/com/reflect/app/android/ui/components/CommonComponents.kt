@@ -40,6 +40,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -49,6 +50,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.reflect.app.android.R
 import com.reflect.app.android.ui.theme.EmotionTheme
+import com.reflect.app.android.ui.theme.Typography
 
 @Composable
 fun EmotionTextField(
@@ -68,7 +70,7 @@ fun EmotionTextField(
         modifier = modifier.fillMaxWidth(),
         placeholder = { Text(placeholder) },
         singleLine = true,
-        shape = RoundedCornerShape(28.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = EmotionTheme.colors.interactive,
             unfocusedBorderColor = EmotionTheme.colors.textSecondary.copy(alpha = 0.5f),
@@ -91,17 +93,22 @@ fun EmotionTextField(
         trailingIcon = {
             if (isPassword) {
                 IconButton(onClick = { passwordVisible = !passwordVisible }) {
+
                     Icon(
-//                        imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                        imageVector = if (passwordVisible) Icons.Default.Add else Icons.Default.Clear,
+                        painter = painterResource(
+                            id = if (passwordVisible) R.drawable.ic_show else R.drawable.ic_hide
+                        ),
                         contentDescription = if (passwordVisible) "Hide password" else "Show password",
                         tint = EmotionTheme.colors.textSecondary
                     )
+
                 }
             }
         }
     )
 }
+
+
 
 @Composable
 fun EmotionButton(
@@ -115,9 +122,9 @@ fun EmotionButton(
         onClick = onClick,
         modifier = modifier
             .fillMaxWidth()
-            .height(56.dp),
+            .height(44.dp),
         enabled = enabled,
-        shape = RoundedCornerShape(28.dp),
+        shape = RoundedCornerShape(8.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = if (enabled) EmotionTheme.colors.interactive else EmotionTheme.colors.interactiveDisabled,
             contentColor = contentColor,
@@ -128,7 +135,7 @@ fun EmotionButton(
     ) {
         Text(
             text = text,
-            style = MaterialTheme.typography.titleMedium
+            style = Typography.bodyMedium
         )
     }
 }

@@ -241,6 +241,7 @@
 				TargetAttributes = {
 					F1465EFC23AA94BF0055F7C3 = {
 						CreatedOnToolsVersion = 11.2.1;
+						LastSwiftMigration = 1620;
 					};
 					F1465F1223AA94C00055F7C3 = {
 						CreatedOnToolsVersion = 11.2.1;
@@ -516,6 +517,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 6V74K56SJ9;
@@ -533,6 +535,8 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.reflect.app.ios;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OBJC_BRIDGING_HEADER = "KaMPKitiOS/KaMPKitiOS-Bridging-Header.h";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -542,6 +546,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 6V74K56SJ9;
@@ -559,6 +564,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.reflect.app.ios;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OBJC_BRIDGING_HEADER = "KaMPKitiOS/KaMPKitiOS-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};

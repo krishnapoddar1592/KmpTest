@@ -99,6 +99,22 @@ class AuthViewModel(
     fun resetRegistrationState() {
         _registrationState.value = RegistrationState.Initial
     }
+
+    fun setAuthenticatedUser(user: User) {
+        _authState.value = AuthState.Authenticated(user)
+    }
+
+    fun setAuthError(errorMessage: String) {
+        _authState.value = AuthState.Error(errorMessage)
+    }
+
+    fun setLoadingState() {
+        _authState.value = AuthState.Loading
+    }
+
+    fun setLoggedOut() {
+        _authState.value = AuthState.Initial
+    }
 }
 
 sealed class AuthState {

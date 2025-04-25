@@ -169,7 +169,7 @@ fun LoginScreen(
                 modifier = Modifier.align(Alignment.End)
             ) {
                 Text(
-                    text = "Recovery Password",
+                    text = "Forgot Password",
                     style = MaterialTheme.typography.bodyMedium,
                     color = EmotionTheme.colors.textSecondary
                 )
@@ -198,7 +198,7 @@ fun LoginScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 SocialButton(
-                    iconResId = R.drawable.ic_favorite_24px,
+                    iconResId = R.drawable.ic_google,
                     onClick = onGoogleSignInClick,
                     contentDescription = "Sign in with Google"
                 )
@@ -206,7 +206,7 @@ fun LoginScreen(
                 Spacer(modifier = Modifier.width(24.dp))
 
                 SocialButton(
-                    iconResId = R.drawable.ic_favorite_24px,
+                    iconResId = R.drawable.ic_apple,
                     onClick = onAppleSignInClick,
                     contentDescription = "Sign in with Apple"
                 )
