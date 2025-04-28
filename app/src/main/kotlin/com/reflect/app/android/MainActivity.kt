@@ -11,17 +11,21 @@ import androidx.compose.runtime.setValue
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.reflect.app.android.ui.screens.EmotionDetectionScreen
 import com.reflect.app.android.ui.screens.LoginScreen
 import com.reflect.app.android.ui.screens.PremiumScreen
+import com.reflect.app.android.ui.screens.RegisterScreen
 import com.reflect.app.android.ui.screens.WelcomeScreen
 import com.reflect.app.android.ui.theme.EmotionAppTheme
 import com.reflect.app.android.ui.theme.EmotionAppTheme.COSMIC
 import com.reflect.app.android.ui.theme.EmotionAppTheme.SERENE
 import com.reflect.app.auth.viewmodel.AuthViewModel
+import com.reflect.app.ml.viewmodel.EmotionDetectionViewModel
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class MainActivity : ComponentActivity() {
     private val authViewModel: AuthViewModel by viewModel()
+    private val emotionDetectionViewModel: EmotionDetectionViewModel by viewModel()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,7 +39,8 @@ class MainActivity : ComponentActivity() {
                     composable("welcome") {
                         WelcomeScreen(
                             onRegisterClick = { navController.navigate("register") },
-                            onSignInClick = { navController.navigate("login") }
+                            onSignInClick = { navController.navigate("login") },
+                            onEmotionclick = {navController.navigate("emotionDetection")}
                         )
                     }
 
@@ -49,11 +54,27 @@ class MainActivity : ComponentActivity() {
                             onLoginSuccess = { println("success") }
                         )
                     }
+                    composable("register") {
+                        RegisterScreen(
+                            viewModel = authViewModel,
+                            onRegisterClick = { navController.navigate("register") },
+                            onForgotPasswordClick = { /* Handle forgot password */ },
+                            onGoogleSignInClick = { /* Handle Google sign in */ },
+                            onAppleSignInClick = { /* Handle Apple sign in */ },
+                            onLoginSuccess = { println("success") }
+                        )
+                    }
 
                     composable("premium") {
                         PremiumScreen(
                             onCloseClick = { navController.navigateUp() },
                             onContinueClick = { /* Handle continue */ }
+                        )
+                    }
+                    composable("emotionDetection") {
+                        EmotionDetectionScreen(
+                            viewModel=emotionDetectionViewModel,
+                            onNavigateBack = { navController.navigateUp() }
                         )
                     }
 

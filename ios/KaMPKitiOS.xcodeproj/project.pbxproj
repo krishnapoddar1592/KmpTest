@@ -19,6 +19,10 @@
 		608197612DB674DE001DB112 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 608197602DB674DE001DB112 /* FirebaseFirestore */; };
 		608197642DB67726001DB112 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 608197632DB67726001DB112 /* GoogleSignIn */; };
 		608197662DB6810F001DB112 /* ReflectApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 608197652DB6810F001DB112 /* ReflectApp.swift */; };
+		6081976D2DBCAE68001DB112 /* EmotionDetectorBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6081976C2DBCAE68001DB112 /* EmotionDetectorBridge.swift */; };
+		608197712DBCB300001DB112 /* EmotionDetectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 608197702DBCB300001DB112 /* EmotionDetectionView.swift */; };
+		608197732DBCBB73001DB112 /* EmotionDetectionViewModelWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 608197722DBCBB73001DB112 /* EmotionDetectionViewModelWrapper.swift */; };
+		608197972DBD0589001DB112 /* EmotionDetection.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = 608197922DBD0357001DB112 /* EmotionDetection.mlpackage */; };
 		F1465F0123AA94BF0055F7C3 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1465F0023AA94BF0055F7C3 /* AppDelegate.swift */; };
 		F1465F0A23AA94BF0055F7C3 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F1465F0923AA94BF0055F7C3 /* Assets.xcassets */; };
 		F1465F0D23AA94BF0055F7C3 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = F1465F0B23AA94BF0055F7C3 /* LaunchScreen.storyboard */; };
@@ -52,6 +56,10 @@
 		608197572DB672A8001DB112 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		608197592DB6733E001DB112 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		608197652DB6810F001DB112 /* ReflectApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReflectApp.swift; sourceTree = "<group>"; };
+		6081976C2DBCAE68001DB112 /* EmotionDetectorBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmotionDetectorBridge.swift; sourceTree = "<group>"; };
+		608197702DBCB300001DB112 /* EmotionDetectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmotionDetectionView.swift; sourceTree = "<group>"; };
+		608197722DBCBB73001DB112 /* EmotionDetectionViewModelWrapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmotionDetectionViewModelWrapper.swift; sourceTree = "<group>"; };
+		608197922DBD0357001DB112 /* EmotionDetection.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; path = EmotionDetection.mlpackage; sourceTree = "<group>"; };
 		60EC6D532DB377AE00746B9E /* shared.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = shared.framework; sourceTree = "<group>"; };
 		60EC6D542DB377AE00746B9E /* shared.framework.dSYM */ = {isa = PBXFileReference; lastKnownFileType = wrapper.dsym; path = shared.framework.dSYM; sourceTree = "<group>"; };
 		F1465EFD23AA94BF0055F7C3 /* KaMPKitiOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = KaMPKitiOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -96,6 +104,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		608197912DBD0347001DB112 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				608197922DBD0357001DB112 /* EmotionDetection.mlpackage */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
 		60EC6D552DB377AE00746B9E /* debug */ = {
 			isa = PBXGroup;
 			children = (
@@ -138,6 +154,10 @@
 		F1465EFF23AA94BF0055F7C3 /* KaMPKitiOS */ = {
 			isa = PBXGroup;
 			children = (
+				608197912DBD0347001DB112 /* Models */,
+				608197722DBCBB73001DB112 /* EmotionDetectionViewModelWrapper.swift */,
+				608197702DBCB300001DB112 /* EmotionDetectionView.swift */,
+				6081976C2DBCAE68001DB112 /* EmotionDetectorBridge.swift */,
 				608197652DB6810F001DB112 /* ReflectApp.swift */,
 				608197592DB6733E001DB112 /* GoogleService-Info.plist */,
 				608197572DB672A8001DB112 /* ContentView.swift */,
@@ -180,6 +200,7 @@
 			buildConfigurationList = F1465F2723AA94C00055F7C3 /* Build configuration list for PBXNativeTarget "KaMPKitiOS" */;
 			buildPhases = (
 				9C16E6F82C0618F100154B87 /* ShellScript */,
+				608197982DBD07A5001DB112 /* ShellScript */,
 				F1465EF923AA94BF0055F7C3 /* Sources */,
 				F1465EFA23AA94BF0055F7C3 /* Frameworks */,
 				F1465EFB23AA94BF0055F7C3 /* Resources */,
@@ -306,6 +327,23 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		608197982DBD07A5001DB112 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\nSRC=\"${SRCROOT}/Models/EmotionDetection.mlpackage\"\n# Destination inside your built .app\nDST=\"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/EmotionDetection.mlmodelc\"\n\nif [ -d \"$SRC\" ]; then\n  echo \"Compiling CoreML Program package → $DST\"\n  xcrun coremlc compile \"$SRC\" \"$DST\"\nelse\n  echo \"⚠️  Could not find $SRC\"\nfi\n";
+		};
 		9C16E6F82C0618F100154B87 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -330,13 +368,17 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				608197972DBD0589001DB112 /* EmotionDetection.mlpackage in Sources */,
+				6081976D2DBCAE68001DB112 /* EmotionDetectorBridge.swift in Sources */,
 				46B5284D249C5CF400A7725D /* Koin.swift in Sources */,
 				608197552DB6727D001DB112 /* AuthStateWrapper.swift in Sources */,
 				608197582DB672A8001DB112 /* ContentView.swift in Sources */,
 				608197512DB66F24001DB112 /* FirebaseAuthManager.swift in Sources */,
+				608197712DBCB300001DB112 /* EmotionDetectionView.swift in Sources */,
 				608197662DB6810F001DB112 /* ReflectApp.swift in Sources */,
 				608197532DB67260001DB112 /* LoginView.swift in Sources */,
 				F1465F0123AA94BF0055F7C3 /* AppDelegate.swift in Sources */,
+				608197732DBCBB73001DB112 /* EmotionDetectionViewModelWrapper.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

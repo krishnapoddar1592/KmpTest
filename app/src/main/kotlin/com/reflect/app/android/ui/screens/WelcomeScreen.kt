@@ -31,7 +31,8 @@ import com.reflect.app.android.ui.theme.Neutral
 @Composable
 fun WelcomeScreen(
     onRegisterClick: () -> Unit,
-    onSignInClick: () -> Unit
+    onSignInClick: () -> Unit,
+    onEmotionclick: ()->Unit
 ) {
     Box(
         modifier = Modifier
@@ -101,14 +102,19 @@ fun WelcomeScreen(
                     modifier = Modifier.weight(1f),
                     contentColor = if (EmotionTheme.currentTheme == com.reflect.app.android.ui.theme.EmotionAppTheme.COSMIC) EmotionTheme.colors.textPrimary else EmotionTheme.colors.textPrimary,
                 )
+                EmotionButton(
+                    text = "Detect Emotion",
+                    onClick = onEmotionclick,
+                    modifier = Modifier.weight(1f)
+                )
             }
 
-            Spacer(modifier = Modifier.height(80.dp)) // Space for the bottom navigation
+//            Spacer(modifier = Modifier.height(80.dp)) // Space for the bottom navigation
         }
 
         // Bottom navigation - would be a separate component in a real app
-        BottomNavigationBar(
-            modifier = Modifier.align(Alignment.BottomCenter)
-        )
+//        BottomNavigationBar(
+//            modifier = Modifier.align(Alignment.BottomCenter)
+//        )
     }
 }

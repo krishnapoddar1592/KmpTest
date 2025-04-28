@@ -49,7 +49,7 @@ val LocalEmotionColorScheme = staticCompositionLocalOf {
 }
 
 // Create composition local to track current theme
-val LocalEmotionAppTheme = compositionLocalOf { EmotionAppTheme.COSMIC }
+val LocalEmotionAppTheme = compositionLocalOf { EmotionAppTheme.SERENE }
 
 // Create our Material color schemes for both themes
 private val CosmicColorScheme = darkColorScheme(

@@ -13,6 +13,9 @@ import com.reflect.app.auth.usecase.GoogleSignInUseCase
 import com.reflect.app.auth.usecase.LoginWithEmailUseCase
 import com.reflect.app.auth.usecase.RegisterUseCase
 import com.reflect.app.auth.viewmodel.AuthViewModel
+import com.reflect.app.ml.EmotionDetectorFactory
+import com.reflect.app.ml.usecase.EmotionDetectionUseCase
+import com.reflect.app.ml.viewmodel.EmotionDetectionViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -33,7 +36,8 @@ fun initKoin(appModule: Module): KoinApplication {
                 appModule,
                 platformModule,
                 coreModule,
-                authModule
+                authModule,
+                mlModule
             )
         }
 
@@ -49,6 +53,12 @@ fun initKoin(appModule: Module): KoinApplication {
     kermit.v { "App Id ${appInfo.appId}" }
 
     return koinApplication
+}
+val mlModule = module {
+    single { EmotionDetectorFactory.createEmotionDetector() }
+    factory { EmotionDetectionUseCase(get()) }
+    factory { CoroutineScope(SupervisorJob() + Dispatchers.Main) }
+    factory { EmotionDetectionViewModel(get(), get()) }
 }
 // Add to the coreModule or create a new module
 val authModule = module {

@@ -8,6 +8,7 @@ import com.google.firebase.FirebaseApp
 import com.reflect.app.AppInfo
 import com.reflect.app.auth.viewmodel.AuthViewModel
 import com.reflect.app.initKoin
+import com.reflect.app.ml.viewmodel.EmotionDetectionViewModel
 import com.reflect.app.models.BreedViewModel
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
@@ -48,6 +49,8 @@ class MainApp : Application() {
                             coroutineScope = get()
                         )
                     }
+                    viewModel { EmotionDetectionViewModel(get(), get()) }
+
 
                     // Add Firebase-related dependencies if needed
                     // Note: If these are already provided in the shared module, you don't need to add them here

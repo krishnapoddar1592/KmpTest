@@ -21,8 +21,9 @@ struct ContentView: View {
                 // Main app content - show your app's main screen here
                 MainAppView(authViewModel: authViewModel)
             } else {
+                MainAppView(authViewModel: authViewModel)
                 // Login view
-                LoginView(authViewModel: authViewModel)
+//                LoginView(authViewModel: authViewModel)
             }
         }
     }
@@ -30,12 +31,22 @@ struct ContentView: View {
 
 struct MainAppView: View {
     @ObservedObject var authViewModel: AuthViewModelWrapper
+    @State private var showEmotionDetection = false
     
     var body: some View {
         VStack {
             Text("You are logged in!")
                 .font(.title)
                 .padding()
+            
+            Button("Emotion Detection") {
+                showEmotionDetection = true
+            }
+            .padding()
+            .background(Color.blue)
+            .foregroundColor(.white)
+            .cornerRadius(8)
+            .padding()
             
             Button("Sign Out") {
                 authViewModel.logout()
@@ -44,6 +55,9 @@ struct MainAppView: View {
             .background(Color.red)
             .foregroundColor(.white)
             .cornerRadius(8)
+        }
+        .sheet(isPresented: $showEmotionDetection) {
+            EmotionDetectionView()
         }
     }
 }

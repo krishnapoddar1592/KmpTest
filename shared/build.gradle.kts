@@ -94,6 +94,18 @@ kotlin {
 }
 dependencies {
     implementation(libs.firebase.auth.ktx)
+    // Add TensorFlow Lite dependencies
+//    implementation(libs.tensorflow.lite)
+//    implementation(libs.tensorflow.lite.gpu) // Optional GPU acceleration
+//    implementation(libs.tensorflow.lite.support)
+    implementation(libs.litert)
+
+    // For image processing
+    implementation(libs.androidx.camera.camera2)
+    implementation(libs.androidx.camera.lifecycle)
+    implementation(libs.androidx.camera.view)
+    implementation(libs.litert.gpu)
+    implementation(libs.firebase.firestore)
 }
 
 sqldelight {

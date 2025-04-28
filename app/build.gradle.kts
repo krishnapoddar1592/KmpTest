@@ -38,6 +38,12 @@ android {
         compose = true
         buildConfig = true
     }
+    aaptOptions {
+        noCompress("tflite")
+    }
+//    packagingOptions {
+//        pickFirst("lib/arm64-v8a/libtensorflowlite_gpu_jni.so")
+//    }
 }
 
 kotlin {
@@ -51,6 +57,8 @@ dependencies {
     implementation(libs.kotlinx.dateTime)
     implementation(libs.androidx.material3.android)
     implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.camera.view)
+    implementation(libs.androidx.camera.lifecycle)
     coreLibraryDesugaring(libs.android.desugaring)
     implementation(libs.koin.android)
     implementation(platform("com.google.firebase:firebase-bom:33.12.0"))
@@ -59,4 +67,7 @@ dependencies {
 
     // Google Sign-In
     implementation("com.google.android.gms:play-services-auth:20.7.0")
+
+//    implementation(libs.koin.androidx.viewmodel)
+//    implementation(libs.koin.androidx.compose)
 }

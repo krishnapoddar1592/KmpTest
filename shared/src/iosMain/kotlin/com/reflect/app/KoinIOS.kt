@@ -10,6 +10,7 @@ import com.reflect.app.auth.viewmodel.AuthViewModel
 import com.reflect.app.data.local.dao.UserDao
 import com.reflect.app.data.local.dao.UserDaoImpl
 import com.reflect.app.db.ReflectDb
+import com.reflect.app.ml.viewmodel.EmotionDetectionViewModel
 import com.russhwolf.settings.NSUserDefaultsSettings
 import com.russhwolf.settings.Settings
 import io.ktor.client.engine.darwin.Darwin
@@ -55,4 +56,6 @@ fun Koin.loggerWithTag(tag: String) = get<Logger>(qualifier = null) { parameters
 @Suppress("unused") // Called from Swift
 object KotlinDependencies : KoinComponent {
     fun getAuthViewModel() = getKoin().get<AuthViewModel>()
+    fun getEmotionDetectionViewModel() = getKoin().get<EmotionDetectionViewModel>()
+
 }
