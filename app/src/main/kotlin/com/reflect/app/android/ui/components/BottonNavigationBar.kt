@@ -21,68 +21,66 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.reflect.app.android.R
 import com.reflect.app.android.ui.theme.EmotionTheme
+import com.reflect.app.android.ui.theme.Typography
 
 @Composable
 fun BottomNavigationBar(
     modifier: Modifier = Modifier,
-    selectedRoute: String = "Home"
+    selectedRoute: String = "Home",
+    onTabSelected: (String) -> Unit = {}
 ) {
     Column(
         modifier = modifier
             .fillMaxWidth()
             .background(EmotionTheme.colors.background)
     ) {
-        Spacer(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(1.dp)
-                .background(EmotionTheme.colors.textSecondary.copy(alpha = 0.1f))
-        )
+//        Spacer(
+//            modifier = Modifier
+//                .fillMaxWidth()
+//                .height(1.dp)
+//                .background(EmotionTheme.colors.textSecondary.copy(alpha = 0.1f))
+//        )
 
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 8.dp, horizontal = 16.dp),
-            horizontalArrangement = Arrangement.SpaceAround,
+            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             NavItem(
                 icon = R.drawable.ic_stats,
-//                icon = R.drawable.ic_favorite_24px,
                 label = "Stats",
-                isSelected = selectedRoute == "Stats"
+                isSelected = selectedRoute == "Stats",
+                onClick = { onTabSelected("Stats") }
             )
 
             NavItem(
                 icon = R.drawable.ic_calendar,
-//                icon = R.drawable.ic_favorite_24px,
-
                 label = "Calendar",
-                isSelected = selectedRoute == "Calendar"
+                isSelected = selectedRoute == "Calendar",
+                onClick = { onTabSelected("Calendar") }
             )
 
             NavItem(
                 icon = R.drawable.ic_home,
-//                icon = R.drawable.ic_favorite_24px,
-
                 label = "Home",
-                isSelected = selectedRoute == "Home"
+                isSelected = selectedRoute == "Home",
+                onClick = { onTabSelected("Home") }
             )
 
             NavItem(
                 icon = R.drawable.ic_breathing,
-//                icon = R.drawable.ic_favorite_24px,
-
                 label = "Breathing",
-                isSelected = selectedRoute == "Breathing"
+                isSelected = selectedRoute == "Breathing",
+                onClick = { onTabSelected("Breathing") }
             )
 
             NavItem(
                 icon = R.drawable.ic_settings,
-//                icon = R.drawable.ic_favorite_24px,
-
                 label = "Settings",
-                isSelected = selectedRoute == "Settings"
+                isSelected = selectedRoute == "Settings",
+                onClick = { onTabSelected("Settings") }
             )
         }
 
@@ -96,7 +94,7 @@ private fun NavItem(
     icon: Int,
     label: String,
     isSelected: Boolean,
-    onClick: () -> Unit = {}
+    onClick: () -> Unit
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -107,6 +105,7 @@ private fun NavItem(
         Icon(
             painter = painterResource(id = icon),
             contentDescription = label,
+            modifier = Modifier.height(20.dp),
             tint = if (isSelected) EmotionTheme.colors.interactive else EmotionTheme.colors.textSecondary
         )
 
@@ -114,8 +113,9 @@ private fun NavItem(
 
         Text(
             text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = if (isSelected) EmotionTheme.colors.interactive else EmotionTheme.colors.textSecondary
+            style = Typography.bodySmall,
+            color = if (isSelected) EmotionTheme.colors.interactive else EmotionTheme.colors.textSecondary,
+
         )
     }
 }

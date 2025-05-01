@@ -20,6 +20,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,6 +44,7 @@ import com.reflect.app.android.ui.theme.EmotionTheme
 import com.reflect.app.android.ui.theme.Neutral
 import com.reflect.app.auth.viewmodel.AuthState
 import com.reflect.app.auth.viewmodel.AuthViewModel
+import com.reflect.app.auth.viewmodel.RegistrationState
 
 @Composable
 fun RegisterScreen(
@@ -60,14 +62,15 @@ fun RegisterScreen(
 
     // Collect auth state
     val authState by viewModel.authState.collectAsStateWithLifecycle()
+    val registrationState by viewModel.registrationState.collectAsStateWithLifecycle()
 
     // Handle authentication state changes
-    when (val state = authState) {
-        is AuthState.Authenticated -> {
+    when (val state = registrationState) {
+        is RegistrationState.Success-> {
             // Navigate to main screen on successful login
             onLoginSuccess()
         }
-        is AuthState.Error -> {
+        is RegistrationState.Error -> {
             // You could show an error message here
         }
         else -> {

@@ -59,6 +59,7 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.camera.view)
     implementation(libs.androidx.camera.lifecycle)
+    implementation(libs.firebase.auth.ktx)
     coreLibraryDesugaring(libs.android.desugaring)
     implementation(libs.koin.android)
     implementation(platform("com.google.firebase:firebase-bom:33.12.0"))

@@ -69,4 +69,10 @@ val Typography = Typography(
         fontSize = 16.sp,
         lineHeight = 24.sp,
     ),
+    bodySmall = TextStyle(
+        fontFamily = CabinetGrotesk,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 10.sp,
+        lineHeight = 24.sp,
+    ),
 )

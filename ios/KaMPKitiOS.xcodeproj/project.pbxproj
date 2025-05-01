@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 54;
+	objectVersion = 70;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -23,6 +23,9 @@
 		608197712DBCB300001DB112 /* EmotionDetectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 608197702DBCB300001DB112 /* EmotionDetectionView.swift */; };
 		608197732DBCBB73001DB112 /* EmotionDetectionViewModelWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 608197722DBCBB73001DB112 /* EmotionDetectionViewModelWrapper.swift */; };
 		608197972DBD0589001DB112 /* EmotionDetection.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = 608197922DBD0357001DB112 /* EmotionDetection.mlpackage */; };
+		608197A12DBFB467001DB112 /* MainAppView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 608197A02DBFB467001DB112 /* MainAppView.swift */; };
+		608197A32DBFB476001DB112 /* RegisterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 608197A22DBFB476001DB112 /* RegisterView.swift */; };
+		608197A62DC28F25001DB112 /* emotion_model_2.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = 608197A52DC28F25001DB112 /* emotion_model_2.mlpackage */; };
 		F1465F0123AA94BF0055F7C3 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1465F0023AA94BF0055F7C3 /* AppDelegate.swift */; };
 		F1465F0A23AA94BF0055F7C3 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F1465F0923AA94BF0055F7C3 /* Assets.xcassets */; };
 		F1465F0D23AA94BF0055F7C3 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = F1465F0B23AA94BF0055F7C3 /* LaunchScreen.storyboard */; };
@@ -60,6 +63,9 @@
 		608197702DBCB300001DB112 /* EmotionDetectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmotionDetectionView.swift; sourceTree = "<group>"; };
 		608197722DBCBB73001DB112 /* EmotionDetectionViewModelWrapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmotionDetectionViewModelWrapper.swift; sourceTree = "<group>"; };
 		608197922DBD0357001DB112 /* EmotionDetection.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; path = EmotionDetection.mlpackage; sourceTree = "<group>"; };
+		608197A02DBFB467001DB112 /* MainAppView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainAppView.swift; sourceTree = "<group>"; };
+		608197A22DBFB476001DB112 /* RegisterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegisterView.swift; sourceTree = "<group>"; };
+		608197A52DC28F25001DB112 /* emotion_model_2.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; path = emotion_model_2.mlpackage; sourceTree = "<group>"; };
 		60EC6D532DB377AE00746B9E /* shared.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = shared.framework; sourceTree = "<group>"; };
 		60EC6D542DB377AE00746B9E /* shared.framework.dSYM */ = {isa = PBXFileReference; lastKnownFileType = wrapper.dsym; path = shared.framework.dSYM; sourceTree = "<group>"; };
 		F1465EFD23AA94BF0055F7C3 /* KaMPKitiOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = KaMPKitiOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -74,6 +80,10 @@
 		F1465F2223AA94C00055F7C3 /* KaMPKitiOSUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KaMPKitiOSUITests.swift; sourceTree = "<group>"; };
 		F1465F2423AA94C00055F7C3 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		608197992DBFA151001DB112 /* Theme */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Theme; sourceTree = "<group>"; };
+/* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		F1465EFA23AA94BF0055F7C3 /* Frameworks */ = {
@@ -110,6 +120,14 @@
 				608197922DBD0357001DB112 /* EmotionDetection.mlpackage */,
 			);
 			path = Models;
+			sourceTree = "<group>";
+		};
+		608197A42DC28F04001DB112 /* Models2 */ = {
+			isa = PBXGroup;
+			children = (
+				608197A52DC28F25001DB112 /* emotion_model_2.mlpackage */,
+			);
+			path = Models2;
 			sourceTree = "<group>";
 		};
 		60EC6D552DB377AE00746B9E /* debug */ = {
@@ -154,6 +172,10 @@
 		F1465EFF23AA94BF0055F7C3 /* KaMPKitiOS */ = {
 			isa = PBXGroup;
 			children = (
+				608197A42DC28F04001DB112 /* Models2 */,
+				608197A22DBFB476001DB112 /* RegisterView.swift */,
+				608197A02DBFB467001DB112 /* MainAppView.swift */,
+				608197992DBFA151001DB112 /* Theme */,
 				608197912DBD0347001DB112 /* Models */,
 				608197722DBCBB73001DB112 /* EmotionDetectionViewModelWrapper.swift */,
 				608197702DBCB300001DB112 /* EmotionDetectionView.swift */,
@@ -208,6 +230,9 @@
 			buildRules = (
 			);
 			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				608197992DBFA151001DB112 /* Theme */,
 			);
 			name = KaMPKitiOS;
 			productName = KaMPKitiOS;
@@ -368,7 +393,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				608197A62DC28F25001DB112 /* emotion_model_2.mlpackage in Sources */,
 				608197972DBD0589001DB112 /* EmotionDetection.mlpackage in Sources */,
+				608197A12DBFB467001DB112 /* MainAppView.swift in Sources */,
 				6081976D2DBCAE68001DB112 /* EmotionDetectorBridge.swift in Sources */,
 				46B5284D249C5CF400A7725D /* Koin.swift in Sources */,
 				608197552DB6727D001DB112 /* AuthStateWrapper.swift in Sources */,
@@ -378,6 +405,7 @@
 				608197662DB6810F001DB112 /* ReflectApp.swift in Sources */,
 				608197532DB67260001DB112 /* LoginView.swift in Sources */,
 				F1465F0123AA94BF0055F7C3 /* AppDelegate.swift in Sources */,
+				608197A32DBFB476001DB112 /* RegisterView.swift in Sources */,
 				608197732DBCBB73001DB112 /* EmotionDetectionViewModelWrapper.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

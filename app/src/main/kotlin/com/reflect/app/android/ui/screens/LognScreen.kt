@@ -180,7 +180,11 @@ fun LoginScreen(
             // Sign in button
             EmotionButton(
                 text = "Sign in",
-                onClick = { viewModel.loginWithEmail(email, password) },
+                onClick = {
+                    viewModel.loginWithEmail(email, password)
+
+
+                          },
 //                isLoading = authState is AuthState.Loading
             )
 

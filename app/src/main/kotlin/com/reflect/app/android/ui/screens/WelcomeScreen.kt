@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -38,6 +40,7 @@ fun WelcomeScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(EmotionTheme.colors.background)
+            .padding(bottom = 24.dp)
     ) {
         // Main content
         Column(
@@ -92,21 +95,21 @@ fun WelcomeScreen(
                 EmotionButton(
                     text = "Register",
                     onClick = onRegisterClick,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f).wrapContentWidth(),
                     contentColor = if (EmotionTheme.currentTheme == com.reflect.app.android.ui.theme.EmotionAppTheme.COSMIC) EmotionTheme.colors.textPrimary else EmotionTheme.colors.textPrimary,
                 )
 
                 EmotionButton(
                     text = "Sign In",
                     onClick = onSignInClick,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f).wrapContentWidth(),
                     contentColor = if (EmotionTheme.currentTheme == com.reflect.app.android.ui.theme.EmotionAppTheme.COSMIC) EmotionTheme.colors.textPrimary else EmotionTheme.colors.textPrimary,
                 )
-                EmotionButton(
-                    text = "Detect Emotion",
-                    onClick = onEmotionclick,
-                    modifier = Modifier.weight(1f)
-                )
+//                EmotionButton(
+//                    text = "Detect Emotion",
+//                    onClick = onEmotionclick,
+//                    modifier = Modifier.weight(1f)
+//                )
             }
 
 //            Spacer(modifier = Modifier.height(80.dp)) // Space for the bottom navigation

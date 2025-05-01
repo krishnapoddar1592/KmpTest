@@ -104,7 +104,7 @@ class AndroidEmotionDetector(private val context: Context) : EmotionDetector {
     // Values based on your model analysis
     private val INPUT_SIZE = 100  // Your model expects 100x100 images
     private val CHANNELS = 3      // RGB input (not grayscale)
-    private val EMOTION_COUNT = 4 // 4 output emotions
+    private val EMOTION_COUNT = 3 // 4 output emotions
 
     init {
         try {
@@ -118,7 +118,8 @@ class AndroidEmotionDetector(private val context: Context) : EmotionDetector {
         try {
             // Load model
 //            val model = FileUtil.loadMappedFile(context, "emotion_detection_model.tflite")
-            val fileDescriptor = context.assets.openFd("emotion_detection_model.tflite")
+//            val fileDescriptor = context.assets.openFd("emotion_detection_model.tflite")
+            val fileDescriptor = context.assets.openFd("emotion_model.tflite")
             val inputStream = fileDescriptor.createInputStream()
             val fileChannel = inputStream.channel
             val startOffset = fileDescriptor.startOffset
@@ -187,11 +188,14 @@ class AndroidEmotionDetector(private val context: Context) : EmotionDetector {
 
             // Map results to emotions
             // Note: You may need to adjust this mapping based on your model's output order
+            println("anger"+outputBuffer[0][0])
+            println("joy"+outputBuffer[0][1])
+            println("sadness"+outputBuffer[0][2])
             return mapOf(
-                Emotion.JOY to outputBuffer[0][0],
-                Emotion.SADNESS to outputBuffer[0][1],
-                Emotion.ANGER to outputBuffer[0][2],
-                Emotion.NEUTRAL to outputBuffer[0][3]
+                Emotion.JOY to outputBuffer[0][1],
+                Emotion.SADNESS to outputBuffer[0][2],
+                Emotion.ANGER to outputBuffer[0][0],
+//                Emotion.NEUTRAL to outputBuffer[0][3]
             )
 
         } catch (e: Exception) {
@@ -206,7 +210,7 @@ class AndroidEmotionDetector(private val context: Context) : EmotionDetector {
             Emotion.JOY to 0.7f,
             Emotion.SADNESS to 0.1f,
             Emotion.ANGER to 0.05f,
-            Emotion.NEUTRAL to 0.15f
+//            Emotion.NEUTRAL to 0.15f
         )
     }
 

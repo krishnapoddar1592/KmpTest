@@ -42,26 +42,7 @@ import com.reflect.app.models.BreedViewState
 import co.touchlab.kermit.Logger
 import kotlinx.coroutines.launch
 
-@Composable
-fun MainScreen(
-    viewModel: BreedViewModel,
-    log: Logger,
-) {
-    val dogsState by viewModel.breedState.collectAsStateWithLifecycle()
-    val scope = rememberCoroutineScope()
 
-    LaunchedEffect(viewModel) {
-        viewModel.activate()
-    }
-
-    MainScreenContent(
-        dogsState = dogsState,
-        onRefresh = { scope.launch { viewModel.refreshBreeds() } },
-        onSuccess = { data -> log.v { "View updating with ${data.size} breeds" } },
-        onError = { exception -> log.e { "Displaying error: $exception" } },
-        onFavorite = { scope.launch { viewModel.updateBreedFavorite(it) } },
-    )
-}
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable

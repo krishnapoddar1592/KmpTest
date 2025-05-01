@@ -9,6 +9,8 @@ import FirebaseAuth       // For Auth.auth() and authentication functions
 import GoogleSignIn       // For GoogleSignIn
 import AuthenticationServices  // For Apple authentication
 import shared
+
+
 enum AuthStateWrapper: Equatable {
     case initial
     case loading
@@ -37,6 +39,12 @@ class AuthViewModelWrapper: ObservableObject {
     @Published var authState: AuthStateWrapper = .initial
     @Published var isLoading = false
     
+    // Add a property to store the current user
+    @Published var currentUser: shared.User? = nil
+    
+    // Create a UserDefaults key for storing the user session
+    private let userSessionKey = "user_session"
+    
     init() {
         self.viewModel = KotlinDependencies().getAuthViewModel()
         observeAuthState()
@@ -53,11 +61,14 @@ class AuthViewModelWrapper: ObservableObject {
                 isEmailVerified: user.isEmailVerified,
                 subscriptionType: SubscriptionType.free,
                 createdAt: Int64(user.metadata.creationDate?.timeIntervalSince1970 ?? 0),
-                
                 lastLoginAt: Int64(user.metadata.lastSignInDate?.timeIntervalSince1970 ?? 0)
             )
             
+            self.currentUser = kotlinUser
             viewModel.setAuthenticatedUser(user: kotlinUser)
+        } else {
+            // Try to restore from saved session
+            restoreUserSession()
         }
     }
     
@@ -76,7 +87,9 @@ class AuthViewModelWrapper: ObservableObject {
                                 self.isLoading = true
                             case let authenticated as AuthState.Authenticated:
                                 self.authState = .authenticated(user: authenticated.user)
+                                self.currentUser = authenticated.user
                                 self.isLoading = false
+                                self.saveUserSession(user: authenticated.user)
                             case let error as AuthState.Error:
                                 self.authState = .error(message: error.message)
                                 self.isLoading = false
@@ -92,7 +105,36 @@ class AuthViewModelWrapper: ObservableObject {
         }
     }
     
-    // These methods now handle auth in Swift and update the Kotlin ViewModel
+    // MARK: - User Session Persistence
+    
+    private func saveUserSession(user: shared.User) {
+        guard let userData = try? JSONEncoder().encode(UserSession(user: user)) else {
+            print("Failed to encode user")
+            return
+        }
+        
+        UserDefaults.standard.set(userData, forKey: userSessionKey)
+    }
+    
+    private func restoreUserSession() {
+        guard let userData = UserDefaults.standard.data(forKey: userSessionKey),
+              let userSession = try? JSONDecoder().decode(UserSession.self, from: userData) else {
+            return
+        }
+        
+        // Check if session is still valid
+        if userSession.expiryDate > Date() {
+            let user = userSession.toUser()
+            self.currentUser = user
+            viewModel.setAuthenticatedUser(user: user)
+        } else {
+            // Session expired, clear it
+            UserDefaults.standard.removeObject(forKey: userSessionKey)
+        }
+    }
+    
+    // MARK: - Auth Methods
+    
     func loginWithEmail(email: String, password: String) {
         viewModel.setLoadingState()
         
@@ -108,11 +150,12 @@ class AuthViewModelWrapper: ObservableObject {
                     displayName: displayName,
                     isEmailVerified: isVerified,
                     subscriptionType: SubscriptionType.free,
-                    createdAt: Int64(Date().timeIntervalSince1970) * 1000,
-                    lastLoginAt: Int64(Date().timeIntervalSince1970) * 1000
+                    createdAt: Int64(Date().timeIntervalSince1970),
+                    lastLoginAt: Int64(Date().timeIntervalSince1970)
                 )
                 
                 DispatchQueue.main.async {
+                    self.currentUser = user
                     self.viewModel.setAuthenticatedUser(user: user)
                 }
             } else {
@@ -150,36 +193,13 @@ class AuthViewModelWrapper: ObservableObject {
                 isEmailVerified: user.isEmailVerified,
                 subscriptionType: SubscriptionType.free,
                 createdAt: Int64(user.metadata.creationDate?.timeIntervalSince1970 ?? 0),
-                
                 lastLoginAt: Int64(user.metadata.lastSignInDate?.timeIntervalSince1970 ?? 0)
             )
             
             DispatchQueue.main.async {
+                self.currentUser = kotlinUser
                 self.viewModel.setAuthenticatedUser(user: kotlinUser)
             }
-        }
-    }
-    
-    func loginWithApple(idToken: String, nonce: String?) {
-        viewModel.setLoadingState()
-        
-        // Similar implementation as loginWithGoogle but for Apple Sign In
-        guard let nonce = nonce else {
-            DispatchQueue.main.async {
-                self.viewModel.setAuthError(errorMessage: "Apple Sign In requires a nonce for security")
-            }
-            return
-        }
-        
-        let credential = OAuthProvider.credential(
-            withProviderID: "apple.com",
-            idToken: idToken,
-            rawNonce: nonce
-        )
-        
-        Auth.auth().signIn(with: credential) { authResult, error in
-            // Handle results and update the ViewModel similar to loginWithGoogle
-            // ...
         }
     }
     
@@ -213,14 +233,15 @@ class AuthViewModelWrapper: ObservableObject {
                         displayName: displayName,
                         isEmailVerified: user.isEmailVerified,
                         subscriptionType: SubscriptionType.free,
-                        createdAt: Int64(Date().timeIntervalSince1970) * 1000,
-                        lastLoginAt: Int64(Date().timeIntervalSince1970) * 1000
+                        createdAt: Int64(Date().timeIntervalSince1970),
+                        lastLoginAt: Int64(Date().timeIntervalSince1970)
                     )
                     
                     DispatchQueue.main.async {
                         if let error = error {
                             self.viewModel.setAuthError(errorMessage: "Failed to set display name: \(error.localizedDescription)")
                         } else {
+                            self.currentUser = kotlinUser
                             self.viewModel.setAuthenticatedUser(user: kotlinUser)
                         }
                     }
@@ -233,11 +254,12 @@ class AuthViewModelWrapper: ObservableObject {
                     displayName: user.displayName,
                     isEmailVerified: user.isEmailVerified,
                     subscriptionType: SubscriptionType.free,
-                    createdAt: Int64(Date().timeIntervalSince1970) * 1000,
-                    lastLoginAt: Int64(Date().timeIntervalSince1970) * 1000
+                    createdAt: Int64(Date().timeIntervalSince1970),
+                    lastLoginAt: Int64(Date().timeIntervalSince1970)
                 )
                 
                 DispatchQueue.main.async {
+                    self.currentUser = kotlinUser
                     self.viewModel.setAuthenticatedUser(user: kotlinUser)
                 }
             }
@@ -247,10 +269,80 @@ class AuthViewModelWrapper: ObservableObject {
     func logout() {
         do {
             try Auth.auth().signOut()
+            // Clear the user session
+            UserDefaults.standard.removeObject(forKey: userSessionKey)
+            self.currentUser = nil
+            
             // Update the Kotlin ViewModel
             viewModel.setLoggedOut()
         } catch {
             print("Error signing out: \(error.localizedDescription)")
         }
+    }
+    
+    // This is the method called from ContentView
+    func setAuthenticatedUser(user: shared.User) {
+        self.currentUser = user
+        viewModel.setAuthenticatedUser(user: user)
+        // Also save the user session for persistence
+        saveUserSession(user: user)
+    }
+}
+
+// MARK: - Helper Structs
+
+// A struct for serializing user session data
+struct UserSession: Codable {
+    let id: String
+    let email: String
+    let displayName: String?
+    let isEmailVerified: Bool
+    let subscriptionType: String
+    let createdAt: Int64
+    let lastLoginAt: Int64
+    let expiryDate: Date
+    
+    init(user: shared.User) {
+        self.id = user.id
+        self.email = user.email
+        self.displayName = user.displayName
+        self.isEmailVerified = user.isEmailVerified
+        
+        switch user.subscriptionType {
+        case SubscriptionType.premium:
+            self.subscriptionType = "PREMIUM"
+        case SubscriptionType.trial:
+            self.subscriptionType = "TRIAL"
+        default:
+            self.subscriptionType = "FREE"
+        }
+        
+        self.createdAt = user.createdAt
+        self.lastLoginAt = user.lastLoginAt
+        
+        // Set session expiry to 30 days from now
+        self.expiryDate = Calendar.current.date(byAdding: .day, value: 30, to: Date()) ?? Date()
+    }
+    
+    func toUser() -> shared.User {
+        let subscriptionTypeEnum: SubscriptionType
+        switch subscriptionType {
+        case "PREMIUM":
+            subscriptionTypeEnum = SubscriptionType.premium
+        case "TRIAL":
+            subscriptionTypeEnum = SubscriptionType.trial
+        default:
+            subscriptionTypeEnum = SubscriptionType.free
+        }
+        
+        return User(
+            id: id,
+            email: email,
+            displayName: displayName,
+            isEmailVerified: isEmailVerified,
+            subscriptionType: subscriptionTypeEnum,
+            createdAt: createdAt,
+            lastLoginAt: lastLoginAt
+        )
     }
 }

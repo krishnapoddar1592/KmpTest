@@ -96,8 +96,14 @@ class EmotionDetectionViewModelWrapper: ObservableObject {
         ).forEach { print($0) }
         print("========================")
 
+//        guard let url = Bundle.main.url(
+//                forResource: "EmotionDetection",
+//                withExtension: "mlmodelc"
+//        ) else {
+//            fatalError("❌ EmotionDetection.mlmodelc not found in app bundle")
+//        }
         guard let url = Bundle.main.url(
-                forResource: "EmotionDetection",
+                forResource: "emotion_model_2",
                 withExtension: "mlmodelc"
         ) else {
             fatalError("❌ EmotionDetection.mlmodelc not found in app bundle")
@@ -172,7 +178,7 @@ class EmotionDetectionViewModelWrapper: ObservableObject {
         }
         
         // Create emotion scores map
-        let emotionTypes = ["ANGER","JOY", "SADNESS", "NEUTRAL"]
+        let emotionTypes = ["ANGER","JOY","SADNESS"]
         var emotionScores: [String: Float] = [:]
         
         for (index, emotionType) in emotionTypes.enumerated() {
@@ -328,6 +334,7 @@ class EmotionDetectionViewModelWrapper: ObservableObject {
         guard let outputArray = prediction.featureValue(for: "Identity")?.multiArrayValue else {
             throw ImageProcessingError.outputMissing
         }
+        print(outputArray)
 
         // 9. Convert MLMultiArray to [Float]
         let outputCount = outputArray.count
@@ -445,7 +452,7 @@ class EmotionDetectionViewModelWrapper: ObservableObject {
         case "Joy": return Emotion.joy
         case "ANGER": return Emotion.anger
         case "SADNESS": return Emotion.sadness
-        case "NEUTRAL": return Emotion.neutral
+//        case "NEUTRAL": return Emotion.neutral
         default: return nil
         }
     }
