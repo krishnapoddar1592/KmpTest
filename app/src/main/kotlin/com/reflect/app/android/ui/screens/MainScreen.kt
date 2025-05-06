@@ -45,6 +45,8 @@ import com.reflect.app.android.ui.theme.Typography
  import androidx.compose.runtime.setValue
  import androidx.compose.runtime.remember
  import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.res.painterResource
+import com.reflect.app.android.R
 import com.reflect.app.ml.viewmodel.EmotionDetectionViewModel
 
 @Composable
@@ -285,10 +287,10 @@ fun SettingsScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
-                                imageVector = if (currentTheme == EmotionAppTheme.COSMIC)
-                                    Icons.Default.AddCircle
+                                painter = painterResource(id = if (currentTheme == EmotionAppTheme.COSMIC)
+                                    R.drawable.ic_cosmic_theme
                                 else
-                                    Icons.Default.CheckCircle,
+                                    R.drawable.ic_serene_theme),
                                 contentDescription = "Theme icon",
                                 tint = EmotionTheme.colors.interactive
                             )

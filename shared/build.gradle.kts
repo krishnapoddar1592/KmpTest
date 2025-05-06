@@ -106,6 +106,8 @@ dependencies {
     implementation(libs.androidx.camera.view)
     implementation(libs.litert.gpu)
     implementation(libs.firebase.firestore)
+    implementation(libs.vision.common)
+    implementation(libs.play.services.mlkit.face.detection)
 }
 
 sqldelight {

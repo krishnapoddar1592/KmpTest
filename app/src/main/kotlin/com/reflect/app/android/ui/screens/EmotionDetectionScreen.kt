@@ -39,12 +39,14 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.reflect.app.android.R
 import com.reflect.app.android.ui.components.EmotionButton
 import com.reflect.app.android.ui.theme.EmotionTheme
 import com.reflect.app.ml.viewmodel.EmotionDetectionState
@@ -103,92 +105,110 @@ fun EmotionDetectionScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(EmotionTheme.colors.background)
+
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Top bar
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-            ) {
-                IconButton(
-                    onClick = onNavigateBack,
-                    modifier = Modifier
-                        .size(48.dp)
-                        .background(EmotionTheme.colors.backgroundSecondary.copy(alpha = 0.5f), CircleShape)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.ArrowBack,
-                        contentDescription = "Back",
-                        tint = EmotionTheme.colors.textPrimary
-                    )
-                }
 
-                // Date display
-                Row(
-                    modifier = Modifier
-                        .align(Alignment.CenterEnd)
-                        .background(
-                            EmotionTheme.colors.backgroundSecondary.copy(alpha = 0.5f),
-                            RoundedCornerShape(24.dp)
-                        )
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.ArrowBack,  // Replace with calendar icon
-                        contentDescription = "Calendar",
-                        tint = EmotionTheme.colors.textPrimary,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "25 Feb 2025",
-                        color = EmotionTheme.colors.textPrimary,
-                        fontSize = 14.sp
-                    )
-                }
-            }
 
-            Spacer(modifier = Modifier.weight(1f))
+//            Spacer(modifier = Modifier.weight(1f))
 
             // Camera preview in small box
-            if (hasCameraPermission) {
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .weight(1.6f) // Take up proportionally more space for the image
+            ) {
                 Box(
                     modifier = Modifier
-                        .align(Alignment.End)
-                        .padding(end = 16.dp)
-                        .size(200.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .border(2.dp, Color.Red, RoundedCornerShape(16.dp))
+                        .fillMaxWidth()
+//                    .padding(16.dp)
                 ) {
-                    if (capturedImagePath == null) {
-                        CameraPreview { capture ->
-                            imageCapture = capture
-                        }
-                    } else {
-                        val bitmap = BitmapFactory.decodeFile(capturedImagePath)
-                        bitmap?.let {
-                            // Mirror the bitmap horizontally
-                            val matrix = Matrix().apply { preScale(-1f, 1f) }
-                            val mirroredBitmap = Bitmap.createBitmap(it, 0, 0, it.width, it.height, matrix, false)
+                    IconButton(
+                        onClick = onNavigateBack,
+                        modifier = Modifier
+                            .size(48.dp)
+                            .background(EmotionTheme.colors.backgroundSecondary.copy(alpha = 0.5f), CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Back",
+                            tint = EmotionTheme.colors.textPrimary
+                        )
+                    }
 
-                            Image(
-                                bitmap = mirroredBitmap.asImageBitmap(),
-                                contentDescription = "Captured Image",
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier.fillMaxSize()
+                    // Date display
+                    Row(
+                        modifier = Modifier
+                            .align(Alignment.CenterEnd)
+                            .background(
+                                EmotionTheme.colors.backgroundSecondary.copy(alpha = 0.5f),
+                                RoundedCornerShape(24.dp)
                             )
-                        }
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.ArrowBack,  // Replace with calendar icon
+                            contentDescription = "Calendar",
+                            tint = EmotionTheme.colors.textPrimary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "25 Feb 2025",
+                            color = EmotionTheme.colors.textPrimary,
+                            fontSize = 14.sp
+                        )
+                    }
+                }
+                // Background image
+                Image(
+                    painter = painterResource(id = R.drawable.avatar),
+                    contentDescription = "Background illustration",
+                    contentScale = ContentScale.FillHeight,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .align(Alignment.BottomCenter)
+                )
 
+                // Camera preview in small box positioned to overlap the image
+                if (hasCameraPermission) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(end = 16.dp)
+                            .size(150.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .border(2.dp, Color.Red, RoundedCornerShape(16.dp))
+                    ) {
+                        if (capturedImagePath == null) {
+                            CameraPreview { capture ->
+                                imageCapture = capture
+                            }
+                        } else {
+                            val bitmap = BitmapFactory.decodeFile(capturedImagePath)
+                            bitmap?.let {
+                                // Mirror the bitmap horizontally
+                                val matrix = Matrix().apply { preScale(-1f, 1f) }
+                                val mirroredBitmap = Bitmap.createBitmap(it, 0, 0, it.width, it.height, matrix, false)
+
+                                Image(
+                                    bitmap = mirroredBitmap.asImageBitmap(),
+                                    contentDescription = "Captured Image",
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            }
+                        }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.weight(1f))
+//            Spacer(modifier = Modifier.weight(1f))
 
             // Bottom card with scan button or results
             Box(
@@ -224,51 +244,6 @@ fun EmotionDetectionScreen(
                                 )
                             }
                         }
-//                        is EmotionDetectionState.Success -> {
-//                            Box(
-//                                modifier = Modifier
-//                                    .padding(horizontal = 24.dp)
-//                                    .fillMaxWidth()
-//                                    .background(
-//                                        EmotionTheme.colors.backgroundSecondary,
-//                                        RoundedCornerShape(16.dp)
-//                                    )
-//                                    .padding(16.dp),
-//                                contentAlignment = Alignment.Center
-//                            ) {
-//                                Column(
-//                                    horizontalAlignment = Alignment.CenterHorizontally
-//                                ) {
-//                                    Text(
-//                                        text = "Detected Emotion",
-//                                        color = EmotionTheme.colors.textPrimary,
-//                                        fontSize = 18.sp,
-//                                        fontWeight = FontWeight.Bold
-//                                    )
-//
-//                                    Spacer(modifier = Modifier.height(8.dp))
-//
-//                                    Text(
-//                                        text = state.dominantEmotion.name,
-//                                        color = EmotionTheme.colors.interactive,
-//                                        fontSize = 24.sp,
-//                                        fontWeight = FontWeight.Bold
-//                                    )
-//
-//                                    Spacer(modifier = Modifier.height(16.dp))
-//                                    EmotionButton(
-//                                        "Restart",
-//                                        onClick = {
-//                                            capturedImagePath = null  // reset image
-//                                            viewModel.resetState()    // reset detection result
-//                                        },
-//                                        modifier=Modifier,
-//                                        contentColor = EmotionTheme.colors.textPrimary,
-//                                        enabled = true
-//                                    )
-//                                }
-//                            }
-//                        }
                         is EmotionDetectionState.Success -> {
                             Box {
                                 Column(
@@ -295,12 +270,12 @@ fun EmotionDetectionScreen(
                                     EmotionButton(
                                         "Restart",
                                         onClick = {
-                                            isCameraRestarting = true
+//                                            isCameraRestarting = true
                                             capturedImagePath = null  // reset image
-                                            CoroutineScope(Dispatchers.Main).launch {
-                                                delay(2000) // Simulate restart delay
-                                                isCameraRestarting = false
-                                            }
+//                                            CoroutineScope(Dispatchers.Main).launch {
+//                                                delay(2000) // Simulate restart delay
+//                                                isCameraRestarting = false
+//                                            }
                                             viewModel.resetState()    // reset detection result
 
 
@@ -309,17 +284,6 @@ fun EmotionDetectionScreen(
                                         contentColor = EmotionTheme.colors.textPrimary,
                                         enabled = true
                                     )
-                                }
-
-                                if (isCameraRestarting) {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .background(Color.Black.copy(alpha = 0.6f)),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        CircularProgressIndicator(color = EmotionTheme.colors.interactive)
-                                    }
                                 }
                             }
                         }
@@ -353,10 +317,6 @@ fun EmotionDetectionScreen(
                                                         println("Image saved successfully at: ${outputFileResults.savedUri ?: photoFile.absolutePath}")
 
                                                         try {
-//                                                            val bytes = photoFile.readBytes()
-//                                                            println("Read ${bytes.size} bytes from file")
-//                                                            viewModel.detectEmotion(bytes, 0, 0)
-//                                                            scansRemaining.value -= 1
                                                             val bytes = photoFile.readBytes()
                                                             viewModel.detectEmotion(bytes, 0, 0)
                                                             capturedImagePath = photoFile.absolutePath  // store image path
@@ -400,12 +360,6 @@ fun EmotionDetectionScreen(
                 }
             }
         }
-
-        // Bottom navigation bar
-//        BottomNavigationBar(
-//            selectedRoute = "Home",
-//            modifier = Modifier.align(Alignment.BottomCenter)
-//        )
     }
 }
 

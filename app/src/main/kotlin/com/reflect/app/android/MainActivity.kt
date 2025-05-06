@@ -267,6 +267,8 @@ class MainActivity : ComponentActivity() {
                             onPremiumClick = { navController.navigate("premium") },
                             onSignOut = {
                                 sessionManager.signOut()
+                                authViewModel.setLoggedOut()
+//                                googleSignInHelper.signOut()
                                 navController.navigate("welcome") {
                                     popUpTo(0) { inclusive = true }
                                     launchSingleTop = true

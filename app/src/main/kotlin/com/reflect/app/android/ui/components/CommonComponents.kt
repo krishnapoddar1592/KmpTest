@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.Clear
 //import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -38,6 +39,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -137,6 +139,51 @@ fun EmotionButton(
             text = text,
             style = Typography.bodyMedium
         )
+    }
+}
+@Composable
+fun EmotionButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    contentColor: Color = Color.White,
+    enabled: Boolean = true,
+    isLoading: Boolean = false
+) {
+    Button(
+        onClick = onClick,
+        modifier = modifier
+            .fillMaxWidth()
+            .height(44.dp),
+        enabled = enabled && !isLoading,
+        shape = RoundedCornerShape(8.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = if (enabled) EmotionTheme.colors.interactive else EmotionTheme.colors.interactiveDisabled,
+            contentColor = contentColor,
+            disabledContainerColor = EmotionTheme.colors.interactiveDisabled,
+            disabledContentColor = contentColor.copy(alpha = 0.6f)
+        ),
+        contentPadding = PaddingValues(horizontal = 24.dp, vertical = 14.dp)
+    ) {
+        Box(
+            contentAlignment = Alignment.Center
+        ) {
+            // Show loading indicator when isLoading is true
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    color = contentColor,
+                    strokeWidth = 2.dp
+                )
+            }
+
+            // Show text only when not loading
+            Text(
+                text = text,
+                style = Typography.bodyMedium,
+                modifier = Modifier.alpha(if (isLoading) 0f else 1f)
+            )
+        }
     }
 }
 

@@ -15,7 +15,7 @@ class GoogleSignInHelper(private val context: Context) {
 
     private val googleSignInClient: GoogleSignInClient by lazy {
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestIdToken("your_web_client_ID") // Replace with your Web Client ID from Firebase Console
+            .requestIdToken("web_client_id") // Replace with your Web Client ID from Firebase Console
             .requestEmail()
             .build()
 
@@ -45,6 +45,13 @@ class GoogleSignInHelper(private val context: Context) {
     }
 
     fun signOut() {
-        googleSignInClient.signOut()
+        googleSignInClient.signOut().addOnCompleteListener {
+            println("Google Sign-In client signed out: ${it.isSuccessful}")
+        }
+
+        // Also consider revoking access
+        googleSignInClient.revokeAccess().addOnCompleteListener {
+            println("Google Sign-In access revoked: ${it.isSuccessful}")
+        }
     }
 }

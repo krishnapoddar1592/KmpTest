@@ -20,6 +20,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -34,6 +35,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.google.firebase.auth.FirebaseAuth
 import com.reflect.app.android.R
 import com.reflect.app.android.ui.components.EmotionButton
 import com.reflect.app.android.ui.components.EmotionDividerWithText
@@ -57,12 +59,26 @@ fun LoginScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     val scrollState = rememberScrollState()
-
+    // Validation states
+    var isEmailValid by remember { mutableStateOf(true) }
+    var isPasswordValid by remember { mutableStateOf(true) }
+    var emailErrorMessage by remember { mutableStateOf("") }
+    var passwordErrorMessage by remember { mutableStateOf("") }
     // Collect auth state
     val authState by viewModel.authState.collectAsStateWithLifecycle()
+    println(authState)
 
     // Handle authentication state changes
-    when (val state = authState) {
+    LaunchedEffect(key1 = Unit) {
+        // Force check auth state when entering login screen
+        val currentUser = FirebaseAuth.getInstance().currentUser
+        println("LOGIN SCREEN: Current user is ${if (currentUser != null) "signed in" else "null"}")
+        if (currentUser != null) {
+            // Maybe force sign out here to ensure clean state
+            FirebaseAuth.getInstance().signOut()
+        }
+    }
+    when (authState) {
         is AuthState.Authenticated -> {
             // Navigate to main screen on successful login
             onLoginSuccess()
@@ -73,6 +89,26 @@ fun LoginScreen(
         else -> {
             // Loading or initial state handled in UI
         }
+    }
+    // Error message to display
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    // Function to validate inputs
+    fun validateInputs(): Boolean {
+        // Email validation
+        val emailPattern = "[a-zA-Z0-9._-]+@[a-z]+\\.+[a-z]+"
+        isEmailValid = email.matches(emailPattern.toRegex())
+        if (!isEmailValid) {
+            emailErrorMessage = "Please enter a valid email address"
+        }
+
+        // Password validation
+        isPasswordValid = password.length >= 6
+        if (!isPasswordValid) {
+            passwordErrorMessage = "Password must be at least 6 characters"
+        }
+
+        return isEmailValid && isPasswordValid
     }
 
     Box(
@@ -147,20 +183,38 @@ fun LoginScreen(
 
             EmotionTextField(
                 value = email,
-                onValueChange = { email = it },
+                onValueChange = {
+                    email = it
+                    isEmailValid = true  // Reset validation on change
+                },
                 placeholder = "Email",
                 keyboardType = KeyboardType.Email,
-                imeAction = ImeAction.Next
+                imeAction = ImeAction.Next,
+                isError = !isEmailValid,
+                errorMessage = if (!isEmailValid) emailErrorMessage else null
             )
+
 
             Spacer(modifier = Modifier.height(16.dp))
 
+//            EmotionTextField(
+//                value = password,
+//                onValueChange = { password = it },
+//                placeholder = "Password",
+//                isPassword = true,
+//                imeAction = ImeAction.Done
+//            )
             EmotionTextField(
                 value = password,
-                onValueChange = { password = it },
+                onValueChange = {
+                    password = it
+                    isPasswordValid = true  // Reset validation on change
+                },
                 placeholder = "Password",
                 isPassword = true,
-                imeAction = ImeAction.Done
+                imeAction = ImeAction.Done,
+                isError = !isPasswordValid,
+                errorMessage = if (!isPasswordValid) passwordErrorMessage else null
             )
 
             // Password recovery
@@ -178,14 +232,24 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             // Sign in button
+//            EmotionButton(
+//                text = "Sign in",
+//                onClick = {
+//                    viewModel.loginWithEmail(email, password)
+//
+//
+//                          },
+////                isLoading = authState is AuthState.Loading
+//            )
             EmotionButton(
                 text = "Sign in",
                 onClick = {
-                    viewModel.loginWithEmail(email, password)
-
-
-                          },
-//                isLoading = authState is AuthState.Loading
+                    if (validateInputs()) {
+                        viewModel.loginWithEmail(email, password)
+                        errorMessage = null  // Clear any previous error
+                    }
+                },
+                isLoading = authState is AuthState.Loading
             )
 
             Spacer(modifier = Modifier.height(24.dp))

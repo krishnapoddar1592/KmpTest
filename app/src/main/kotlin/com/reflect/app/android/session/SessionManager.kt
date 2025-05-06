@@ -4,6 +4,7 @@ package com.reflect.app.android.session
 import android.content.Context
 import android.content.SharedPreferences
 import com.google.firebase.auth.FirebaseAuth
+import com.reflect.app.android.GoogleSignInHelper
 import com.reflect.app.models.SubscriptionType
 import com.reflect.app.models.User
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,7 +23,9 @@ class SessionManager(private val context: Context) {
     private val sharedPreferences: SharedPreferences = context.getSharedPreferences(
         SESSION_PREFS_NAME, Context.MODE_PRIVATE
     )
-    
+    private val googleSignInHelper = GoogleSignInHelper(context)
+
+
     private val _currentUser = MutableStateFlow<User?>(null)
     val currentUser: StateFlow<User?> = _currentUser.asStateFlow()
     
@@ -33,8 +36,11 @@ class SessionManager(private val context: Context) {
         // Set up auth state listener
         auth.addAuthStateListener { firebaseAuth ->
             val user = firebaseAuth.currentUser
+            println("AUTH STATE CHANGED: User is ${if (user != null) "signed in" else "signed out"}")
+
             if (user != null) {
                 // User is logged in
+                println("User ID: ${user.uid}, Email: ${user.email}")
                 val kotlinUser = User(
                     id = user.uid,
                     email = user.email ?: "",
@@ -140,6 +146,7 @@ class SessionManager(private val context: Context) {
      */
     fun signOut() {
         auth.signOut()
+        googleSignInHelper.signOut()
         clearSession()
     }
     

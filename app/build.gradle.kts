@@ -68,6 +68,7 @@ dependencies {
 
     // Google Sign-In
     implementation("com.google.android.gms:play-services-auth:20.7.0")
+    implementation("com.google.mlkit:face-detection:16.1.5")
 
 //    implementation(libs.koin.androidx.viewmodel)
 //    implementation(libs.koin.androidx.compose)

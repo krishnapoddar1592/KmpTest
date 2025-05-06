@@ -104,7 +104,12 @@ class AndroidFirebaseAuth : FirebaseAuthInterface {
     }
 
     override suspend fun logout() {
-        auth.signOut()
+        try{
+            auth.signOut()
+            print(auth.currentUser?.email)
+        }catch (e:Exception){
+            print(e)
+        }
     }
 
     override suspend fun getCurrentUser(): User? {
