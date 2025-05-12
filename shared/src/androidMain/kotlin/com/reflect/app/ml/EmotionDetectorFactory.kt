@@ -14,18 +14,18 @@ actual object EmotionDetectorFactory : KoinComponent {
     }
 }
 // A temporary implementation that doesn't use TensorFlow
-class DummyEmotionDetector : EmotionDetector {
-    override suspend fun detectEmotion(imageData: ByteArray, width: Int, height: Int): Map<Emotion, Float> {
-        // Return mock data
-        return mapOf(
-            Emotion.JOY to 0.7f,
-            Emotion.SADNESS to 0.1f,
-            Emotion.ANGER to 0.05f,
-            Emotion.NEUTRAL to 0.15f
-        )
-    }
-
-    override fun close() {
-        // Nothing to close
-    }
-}
+//class DummyEmotionDetector : EmotionDetector {
+//    override suspend fun detectEmotion(imageData: ByteArray, width: Int, height: Int): Map<Emotion, Float> {
+//        // Return mock data
+//        return mapOf(
+//            Emotion.JOY to 0.7f,
+//            Emotion.SADNESS to 0.1f,
+//            Emotion.ANGER to 0.05f,
+//            Emotion.NEUTRAL to 0.15f
+//        )
+//    }
+//
+//    override fun close() {
+//        // Nothing to close
+//    }
+//}

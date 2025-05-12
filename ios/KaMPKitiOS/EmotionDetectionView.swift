@@ -512,7 +512,7 @@ struct EmotionDetectionView: View {
                 .cornerRadius(8)
                 .padding(.bottom, 30)
                 #endif
-            }
+ }
         }
     }
 }
@@ -527,13 +527,13 @@ struct SimulatorCameraView: View {
     var body: some View {
         VStack {
             // Make sure this matches your asset name
-            Image("test_real")
+            Image("test5")
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .padding()
 
             Button("Detect Emotion") {
-                guard let uiImage = UIImage(named: "test_real"),
+                guard let uiImage = UIImage(named: "test5"),
                       let data = uiImage.jpegData(compressionQuality: 0.8)
                 else { return }
 

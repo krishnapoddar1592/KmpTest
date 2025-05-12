@@ -1,5 +1,8 @@
 package com.reflect.app.models
 
-expect abstract class ViewModel() {
-    protected open fun onCleared()
+import androidx.lifecycle.ViewModel
+
+
+expect abstract class ViewModel() : ViewModel {
+    protected override fun onCleared()
 }

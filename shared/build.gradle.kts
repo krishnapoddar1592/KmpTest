@@ -73,6 +73,8 @@ kotlin {
             implementation(libs.kotlinx.dateTime)
             implementation(libs.touchlab.skie.annotations)
             api(libs.touchlab.kermit)
+//            implementation(libs.play.services.mlkit.face.detection)
+
         }
         commonTest.dependencies {
             implementation(libs.bundles.shared.commonTest)
@@ -81,6 +83,8 @@ kotlin {
             implementation(libs.androidx.lifecycle.viewmodel)
             implementation(libs.sqlDelight.android)
             implementation(libs.ktor.client.okHttp)
+            implementation(libs.play.services.fitness)
+
         }
         getByName("androidUnitTest").dependencies {
             implementation(libs.bundles.shared.androidTest)
@@ -108,6 +112,7 @@ dependencies {
     implementation(libs.firebase.firestore)
     implementation(libs.vision.common)
     implementation(libs.play.services.mlkit.face.detection)
+    implementation(libs.androidx.media3.common.ktx)
 }
 
 sqldelight {

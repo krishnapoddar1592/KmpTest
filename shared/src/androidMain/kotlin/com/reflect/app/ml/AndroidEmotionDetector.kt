@@ -3,17 +3,20 @@
 
 package com.reflect.app.ml
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Rect
 import android.util.Log
 import android.widget.Toast
+import androidx.camera.core.ImageProxy
 import com.google.firebase.firestore.util.FileUtil
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetector
 import com.google.mlkit.vision.face.FaceDetectorOptions
+import com.google.mlkit.vision.face.FaceLandmark
 import kotlinx.coroutines.suspendCancellableCoroutine
 import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.gpu.CompatibilityList
@@ -25,6 +28,7 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.math.max
 
+// 1. Updated AndroidEmotionDetector with continuous face detection
 class AndroidEmotionDetector(private val context: Context) : EmotionDetector {
     private var interpreter: Interpreter? = null
     private var gpuDelegate: GpuDelegate? = null
@@ -40,7 +44,10 @@ class AndroidEmotionDetector(private val context: Context) : EmotionDetector {
             // Initialize face detector with high accuracy options
             val options = FaceDetectorOptions.Builder()
                 .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_ACCURATE)
+                .setLandmarkMode(FaceDetectorOptions.LANDMARK_MODE_ALL) // Crucial
                 .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_NONE)
+                .setMinFaceSize(0.1f) // Example: smallest face is 10% of image width
+
                 .build()
 
             faceDetector = FaceDetection.getClient(options)
@@ -50,7 +57,207 @@ class AndroidEmotionDetector(private val context: Context) : EmotionDetector {
             Log.e("EmotionDetector", "Error initializing TFLite model or Face Detector", e)
         }
     }
+    @SuppressLint("UnsafeOptInUsageError")
+    override suspend fun detectFaceInImageProxy(imageProxyInput: Any): Boolean = suspendCancellableCoroutine { continuation ->
+        val imageProxy = imageProxyInput as? ImageProxy ?: run { /* ... handle error & close ... */ return@suspendCancellableCoroutine }
+        continuation.invokeOnCancellation { imageProxy.close() }
+        val mediaImage = imageProxy.image ?: run { /* ... handle error & close ... */
+            Log.e("EmotionDetector", "Invalid ImageProxy type passed to detectFaceInImageProxy.")
+            if (continuation.isActive) continuation.resume(false)
+            return@suspendCancellableCoroutine}
 
+        try {
+            val rotationDegrees = imageProxy.imageInfo.rotationDegrees
+            val inputImage = InputImage.fromMediaImage(mediaImage, rotationDegrees)
+
+            faceDetector.process(inputImage)
+                .addOnSuccessListener { faces ->
+                    var fullFaceDetected = false
+                    if (faces.isNotEmpty()) {
+                        for (face in faces) {
+                            // --- Apply your checks here ---
+                            val hasKeyLandmarks = checkKeyLandmarks(face)
+                            val isFrontalEnough = checkHeadPose(face)
+                            val isSufficientlyVisible = checkVisibility(face, imageProxy.width, imageProxy.height)
+                            // val isLargeEnough = checkSize(face, imageProxy.width, imageProxy.height) // Could be redundant if setMinFaceSize is used
+
+                            if (hasKeyLandmarks && isFrontalEnough && isSufficientlyVisible) {
+                                fullFaceDetected = true
+                                break // Found one full face, no need to check others
+                            }
+                        }
+                    }
+                    if (continuation.isActive) continuation.resume(fullFaceDetected)
+                }
+                .addOnFailureListener { e ->
+                    Log.e("EmotionDetector", "Face detection (ImageProxy) failed", e)
+                    if (continuation.isActive) {
+                        continuation.resume(false)
+                    }
+                }
+                .addOnCompleteListener {
+                    if (!continuation.isCancelled) imageProxy.close()
+                }
+        } catch (e: Exception) {
+            Log.e("EmotionDetector", "Error processing ImageProxy for face detection", e)
+            if (continuation.isActive) {
+                continuation.resume(false)
+            }
+            // If an exception occurred here, and it's not cancelled, close the proxy.
+            if (!continuation.isCancelled) {
+                imageProxy.close()
+            }
+        }
+    }
+    private fun checkKeyLandmarks(face: com.google.mlkit.vision.face.Face): Boolean {
+        val leftEye = face.getLandmark(FaceLandmark.LEFT_EYE)
+        val rightEye = face.getLandmark(FaceLandmark.RIGHT_EYE)
+        val noseBase = face.getLandmark(FaceLandmark.NOSE_BASE)
+        val mouthLeft = face.getLandmark(FaceLandmark.MOUTH_LEFT)
+        val mouthRight = face.getLandmark(FaceLandmark.MOUTH_RIGHT)
+        return leftEye != null && rightEye != null && noseBase != null && mouthLeft != null && mouthRight != null
+    }
+
+    private fun checkHeadPose(face: com.google.mlkit.vision.face.Face): Boolean {
+        val MAX_YAW_DEGREES = 25f // Tune this
+        val MAX_PITCH_DEGREES = 20f // Tune this
+        return Math.abs(face.headEulerAngleY) <= MAX_YAW_DEGREES &&
+                Math.abs(face.headEulerAngleX) <= MAX_PITCH_DEGREES
+    }
+
+    private fun checkVisibility(face: com.google.mlkit.vision.face.Face, imageWidth: Int, imageHeight: Int): Boolean {
+        val faceBoundingBox = face.boundingBox
+        if (imageWidth == 0 || imageHeight == 0) return false // Avoid division by zero if image dimensions are not ready
+
+        // Check if bounding box is mostly within image (simplified check)
+        val isMostlyInside = faceBoundingBox.left >= 0 &&
+                faceBoundingBox.top >= 0 &&
+                faceBoundingBox.right <= imageWidth &&
+                faceBoundingBox.bottom <= imageHeight
+
+        // More precise check: ensure certain percentage of face area is visible
+        val imageRect = android.graphics.Rect(0, 0, imageWidth, imageHeight)
+        val visiblePortion = android.graphics.Rect(faceBoundingBox)
+        if (visiblePortion.intersect(imageRect)) {
+            val visibleArea = visiblePortion.width() * visiblePortion.height()
+            val totalFaceArea = faceBoundingBox.width() * faceBoundingBox.height()
+            if (totalFaceArea > 0) {
+                return (visibleArea.toFloat() / totalFaceArea) >= 0.80f // e.g., 80% of the detected face bbox must be visible
+            }
+        }
+        return false
+    }
+
+//    @SuppressLint("UnsafeOptInUsageError") // For imageProxy.image
+//    override suspend fun detectFaceInImageProxy(imageProxyInput: Any): Boolean = suspendCancellableCoroutine { continuation ->
+//        val imageProxy = imageProxyInput as? ImageProxy
+//            ?: run {
+//                Log.e("EmotionDetector", "Invalid ImageProxy type passed to detectFaceInImageProxy.")
+//                if (continuation.isActive) continuation.resume(false)
+//                return@suspendCancellableCoroutine
+//            }
+//
+//        // Primary mechanism for closing if the coroutine is cancelled.
+//        continuation.invokeOnCancellation {
+//            // Log.d("EmotionDetector", "ImageProxy analysis cancelled, closing proxy.")
+//            imageProxy.close()
+//        }
+//
+//        val mediaImage = imageProxy.image
+//        if (mediaImage == null) {
+//            Log.e("EmotionDetector", "MediaImage is null from ImageProxy.")
+//            if (continuation.isActive) continuation.resume(false)
+//            // If not cancelled and we are resuming, ensure it's closed as we are done with it.
+//            if (!continuation.isCancelled) {
+//                imageProxy.close()
+//            }
+//            return@suspendCancellableCoroutine
+//        }
+//
+//        try {
+//            val rotationDegrees = imageProxy.imageInfo.rotationDegrees
+//            val inputImage = InputImage.fromMediaImage(mediaImage, rotationDegrees)
+//
+//            faceDetector.process(inputImage)
+//                .addOnSuccessListener { faces ->
+//
+//                    if (continuation.isActive) {
+//                        // Log.d("EmotionDetector", "Face detection (ImageProxy) success: ${faces.size} faces")
+//                        continuation.resume(faces.isNotEmpty())
+//                    }
+//                }
+//                .addOnFailureListener { e ->
+//                    Log.e("EmotionDetector", "Face detection (ImageProxy) failed", e)
+//                    if (continuation.isActive) {
+//                        continuation.resume(false)
+//                    }
+//                }
+//                .addOnCompleteListener {
+//                    // This ensures the proxy is closed once the ML Kit task is truly complete,
+//                    // if the coroutine itself hasn't been cancelled.
+//                    if (!continuation.isCancelled) {
+//                        // Log.d("EmotionDetector", "ML Kit task complete, closing proxy.")
+//                        imageProxy.close()
+//                    }
+//                }
+//        } catch (e: Exception) { // Catches exceptions from fromMediaImage or synchronous part of process()
+//            Log.e("EmotionDetector", "Error processing ImageProxy for face detection", e)
+//            if (continuation.isActive) {
+//                continuation.resume(false)
+//            }
+//            // If an exception occurred here, and it's not cancelled, close the proxy.
+//            if (!continuation.isCancelled) {
+//                imageProxy.close()
+//            }
+//        }
+//    }
+
+
+
+    // ADD: New method for continuous face detection without emotion analysis
+    override suspend fun detectFace(imageData: ByteArray, width: Int, height: Int): Boolean = suspendCancellableCoroutine { continuation ->
+        Log.d("EmotionDetector", "Starting face detection - width: $width, height: $height, data size: ${imageData.size}")
+
+        try {
+            // Convert ByteArray to Bitmap
+            val bitmap = BitmapFactory.decodeByteArray(imageData, 0, imageData.size)
+                ?: run {
+                    Log.e("EmotionDetector", "Failed to decode image data - bitmap is null")
+                    continuation.resume(false)
+                    return@suspendCancellableCoroutine
+                }
+
+            Log.d("EmotionDetector", "Bitmap created successfully - ${bitmap.width}x${bitmap.height}")
+
+            // Check if bitmap meets ML Kit's minimum requirements
+            if (bitmap.width < 32 || bitmap.height < 32) {
+                Log.e("EmotionDetector", "Bitmap too small for face detection: ${bitmap.width}x${bitmap.height}. ML Kit requires at least 32x32")
+                bitmap.recycle()
+                continuation.resume(false)
+                return@suspendCancellableCoroutine
+            }
+
+            // Create InputImage from bitmap
+            val image = InputImage.fromBitmap(bitmap, 0)
+
+            faceDetector.process(image)
+                .addOnSuccessListener { faces ->
+                    Log.d("EmotionDetector", "Face detection completed - found ${faces.size} faces")
+                    bitmap.recycle() // Clean up
+                    continuation.resume(faces.isNotEmpty())
+                }
+                .addOnFailureListener { e ->
+                    Log.e("EmotionDetector", "Face detection failed", e)
+                    bitmap.recycle() // Clean up
+                    continuation.resume(false)
+                }
+        } catch (e: Exception) {
+            Log.e("EmotionDetector", "Error in detectFaceInFrame", e)
+            continuation.resume(false)
+        }
+    }
+
+    // Rest of the existing methods remain the same...
     private fun setupModel() {
         try {
             val fileDescriptor = context.assets.openFd("best_float_final.tflite")
@@ -76,8 +283,8 @@ class AndroidEmotionDetector(private val context: Context) : EmotionDetector {
         }
     }
 
-    // Helper function to detect faces using ML Kit, returns as a suspend function
-    private suspend fun detectFace(bitmap: Bitmap): Rect? = suspendCancellableCoroutine { continuation ->
+
+    suspend fun detectFace(bitmap: Bitmap): Rect? = suspendCancellableCoroutine { continuation ->
         val image = InputImage.fromBitmap(bitmap, 0)
 
         faceDetector.process(image)
@@ -209,8 +416,12 @@ class AndroidEmotionDetector(private val context: Context) : EmotionDetector {
     override fun close() {
         interpreter?.close()
         gpuDelegate?.close()
-        faceDetector.close()
+        // Check if faceDetector is lateinit and initialized before closing
+        if (this::faceDetector.isInitialized) {
+            faceDetector.close()
+        }
         interpreter = null
         gpuDelegate = null
+        Log.d("EmotionDetector", "EmotionDetector resources released.")
     }
 }
