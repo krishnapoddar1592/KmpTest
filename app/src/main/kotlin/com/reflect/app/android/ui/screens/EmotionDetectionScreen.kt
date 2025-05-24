@@ -24,14 +24,25 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
+import androidx.compose.material.OutlinedButton
 import androidx.compose.material.Text
+import androidx.compose.material.TextButton
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,11 +60,17 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.reflect.app.android.R
+import com.reflect.app.android.ui.components.EmotionButton
 import com.reflect.app.android.ui.theme.EmotionTheme
+import com.reflect.app.ml.Emotion
 import com.reflect.app.ml.viewmodel.EmotionDetectionViewModel
 import com.reflect.app.ml.viewmodel.FaceDetectionState
+import com.reflect.app.models.ContextTag
 import com.reflect.app.viewmodels.EnhancedEmotionDetectionState
 import com.reflect.app.viewmodels.EnhancedEmotionDetectionViewModel
+import kotlinx.datetime.Clock
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import java.io.File
 
 //// app/src/main/kotlin/com/reflect/app/android/ui/screens/EmotionDetectionScreen.kt
@@ -585,90 +602,7 @@ import java.io.File
 //    }
 //}
 //
-@Composable
-fun CameraPreviewWithImageCaptureAndAnalysis(
-    viewModel: EnhancedEmotionDetectionViewModel, // Pass your ViewModel
-    onImageCaptureCreated: (ImageCapture) -> Unit,
-    observedFaceDetectionState: FaceDetectionState // State from ViewModel for UI updates
-) {
-    val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
-    val previewView = remember { PreviewView(context) }
-    val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
 
-    var lastAnalysisTimeMs by remember { mutableStateOf(0L) }
-    val analysisIntervalMs = 750L // Analyze roughly every 0.75 seconds
-
-    DisposableEffect(lifecycleOwner, viewModel) { // Add viewModel as a key
-        val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
-
-        cameraProviderFuture.addListener({
-            try {
-                val cameraProvider = cameraProviderFuture.get()
-                cameraProvider.unbindAll()
-
-                val preview = Preview.Builder()
-                    .setTargetResolution(android.util.Size(640, 480))
-                    .build().also { it.setSurfaceProvider(previewView.surfaceProvider) }
-
-                val imageCapture = ImageCapture.Builder()
-                    .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
-                    .build()
-
-                val imageAnalysis = ImageAnalysis.Builder()
-                    .setTargetResolution(android.util.Size(640, 480))
-                    .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                    .build()
-
-                imageAnalysis.setAnalyzer(
-                    cameraExecutor, // Run analyzer on a background thread
-                    ImageAnalysis.Analyzer { imageProxy -> // imageProxy is androidx.camera.core.ImageProxy
-                        val currentTimeMs = System.currentTimeMillis()
-                        if (currentTimeMs - lastAnalysisTimeMs >= analysisIntervalMs) {
-                            lastAnalysisTimeMs = currentTimeMs
-                            // Pass the ImageProxy to the ViewModel for processing.
-                            // The ViewModel's analyzeFaceInImageProxy method will call the UseCase,
-                            // and the EmotionDetector is responsible for closing the imageProxy.
-                            viewModel.analyzeFaceInImageProxy(imageProxy) // ViewModel handles this
-                        } else {
-                            // If frame is skipped, MUST close the ImageProxy
-                            imageProxy.close()
-                        }
-                    }
-                )
-
-                cameraProvider.bindToLifecycle(
-                    lifecycleOwner,
-                    CameraSelector.DEFAULT_FRONT_CAMERA,
-                    preview,
-                    imageCapture,
-                    imageAnalysis
-                )
-                onImageCaptureCreated(imageCapture) // Callback for the ImageCapture instance
-                Log.d("CameraPreview", "Camera setup with all use cases successful.")
-
-            } catch (e: Exception) {
-                Log.e("CameraPreview", "Camera setup failed", e)
-            }
-        }, ContextCompat.getMainExecutor(context))
-
-        onDispose {
-            Log.d("CameraPreview", "Disposing camera preview, shutting down executor.")
-            cameraExecutor.shutdown()
-        }
-    }
-
-    // Frame color based on the observed face detection state from the ViewModel
-    val frameColor = when (observedFaceDetectionState) {
-        FaceDetectionState.FaceDetected -> Color.Red
-        FaceDetectionState.NoFaceDetected -> Color.Gray
-        FaceDetectionState.Initial -> Color.Green // Or Color.Transparent
-    }
-
-    Box(modifier = Modifier.fillMaxSize()) {
-        AndroidView({ previewView }, modifier = Modifier.fillMaxSize())
-    }
-}
 //
 //
 //fun createTempFile(cacheDir: File): File {
@@ -866,278 +800,220 @@ fun EmotionDetectionScreen(
         }
     }
 
+    // Handle saved state
+    when (val state = detectionState) {
+        is EnhancedEmotionDetectionState.Saved -> {
+            LaunchedEffect(state.entry) {
+                kotlinx.coroutines.delay(2000)
+                viewModel.resetState()
+                capturedImagePath = null
+            }
+
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "✅",
+                        fontSize = 64.sp
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "Entry Saved Successfully!",
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = EmotionTheme.colors.interactive,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Your emotion has been added to your timeline",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = EmotionTheme.colors.textSecondary
+                    )
+                }
+            }
+            return
+        }
+        else -> {
+            // Continue with main interface
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(EmotionTheme.colors.background)
     ) {
-        when (val state = detectionState) {
-            is EnhancedEmotionDetectionState.Success -> {
-                // Show enhanced success screen with context tags and notes
-                val capturedBitmap = remember(state.capturedImagePath) {
-                    state.capturedImagePath?.let { path ->
-                        try {
-                            BitmapFactory.decodeFile(path)
-                        } catch (e: Exception) {
-                            null
-                        }
-                    }
-                }
-
-                Column(
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    // Header
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp)
-                    ) {
-                        IconButton(
-                            onClick = onNavigateBack,
-                            modifier = Modifier
-                                .size(48.dp)
-                                .background(EmotionTheme.colors.backgroundSecondary.copy(alpha = 0.5f), CircleShape)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.ArrowBack,
-                                contentDescription = "Back",
-                                tint = EmotionTheme.colors.textPrimary
-                            )
-                        }
-                    }
-
-                    // Success content
-                    EmotionSuccessContent(
-                        dominantEmotion = state.dominantEmotion,
-                        emotionScores = state.emotionScores,
-                        capturedBitmap = capturedBitmap,
-                        onSaveEntry = { selectedTags, note ->
-                            viewModel.saveEmotionEntry(selectedTags, note)
-                        },
-                        onRestart = {
-                            viewModel.resetState()
-                            capturedImagePath = null
-                        },
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-            }
-
-            is EnhancedEmotionDetectionState.Saved -> {
-                // Show confirmation
-                LaunchedEffect(state.entry) {
-                    kotlinx.coroutines.delay(2000)
-                    viewModel.resetState()
-                    capturedImagePath = null
-                }
-
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Camera section
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .weight(1.6f)
+            ) {
                 Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
                 ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
+                    IconButton(
+                        onClick = onNavigateBack,
+                        modifier = Modifier
+                            .size(48.dp)
+                            .background(EmotionTheme.colors.backgroundSecondary.copy(alpha = 0.5f), CircleShape)
                     ) {
-                        Text(
-                            text = "✅",
-                            fontSize = 64.sp
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = "Entry Saved Successfully!",
-                            style = androidx.compose.material3.MaterialTheme.typography.headlineSmall,
-                            color = EmotionTheme.colors.interactive,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "Your emotion has been added to your timeline",
-                            style = androidx.compose.material3.MaterialTheme.typography.bodyLarge,
-                            color = EmotionTheme.colors.textSecondary
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Back",
+                            tint = EmotionTheme.colors.textPrimary
                         )
                     }
                 }
-            }
 
-            else -> {
-                // Original scanning interface
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    // Camera section
+                // Background image
+                Image(
+                    painter = painterResource(id = R.drawable.avatar),
+                    contentDescription = "Background illustration",
+                    contentScale = ContentScale.FillHeight,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .align(Alignment.BottomCenter)
+                )
+
+                // Camera preview
+                if (hasCameraPermission) {
                     Box(
                         modifier = Modifier
-                            .fillMaxHeight()
-                            .weight(1.6f)
+                            .align(Alignment.BottomEnd)
+                            .padding(end = 16.dp)
+                            .size(150.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .border(
+                                2.dp,
+                                if (faceDetectionState == FaceDetectionState.NoFaceDetected) Color.Red else Color.Green,
+                                RoundedCornerShape(16.dp)
+                            )
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp)
-                        ) {
-                            IconButton(
-                                onClick = onNavigateBack,
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .background(EmotionTheme.colors.backgroundSecondary.copy(alpha = 0.5f), CircleShape)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.ArrowBack,
-                                    contentDescription = "Back",
-                                    tint = EmotionTheme.colors.textPrimary
+                        if (capturedImagePath == null) {
+                            CameraPreviewWithImageCaptureAndAnalysis(
+                                viewModel = viewModel,
+                                onImageCaptureCreated = { capture ->
+                                    imageCapture = capture
+                                },
+                                observedFaceDetectionState = faceDetectionState
+                            )
+                        } else {
+                            val bitmap = BitmapFactory.decodeFile(capturedImagePath)
+                            bitmap?.let {
+                                val matrix = Matrix().apply { preScale(-1f, 1f) }
+                                val mirroredBitmap = Bitmap.createBitmap(it, 0, 0, it.width, it.height, matrix, false)
+
+                                Image(
+                                    bitmap = mirroredBitmap.asImageBitmap(),
+                                    contentDescription = "Captured Image",
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize()
                                 )
                             }
                         }
-
-                        // Background image
-                        Image(
-                            painter = painterResource(id = R.drawable.avatar),
-                            contentDescription = "Background illustration",
-                            contentScale = ContentScale.FillHeight,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .align(Alignment.BottomCenter)
-                        )
-
-                        // Camera preview
-                        if (hasCameraPermission) {
-                            Box(
-                                modifier = Modifier
-                                    .align(Alignment.BottomEnd)
-                                    .padding(end = 16.dp)
-                                    .size(150.dp)
-                                    .clip(RoundedCornerShape(16.dp))
-                                    .border(
-                                        2.dp,
-                                        if (faceDetectionState == FaceDetectionState.NoFaceDetected) Color.Red else Color.Green,
-                                        RoundedCornerShape(16.dp)
-                                    )
-                            ) {
-                                if (capturedImagePath == null) {
-                                    CameraPreviewWithImageCaptureAndAnalysis(
-                                        viewModel = viewModel,
-                                        onImageCaptureCreated = { capture ->
-                                            imageCapture = capture
-                                        },
-                                        observedFaceDetectionState = faceDetectionState
-                                    )
-                                } else {
-                                    val bitmap = BitmapFactory.decodeFile(capturedImagePath)
-                                    bitmap?.let {
-                                        val matrix = Matrix().apply { preScale(-1f, 1f) }
-                                        val mirroredBitmap = Bitmap.createBitmap(it, 0, 0, it.width, it.height, matrix, false)
-
-                                        Image(
-                                            bitmap = mirroredBitmap.asImageBitmap(),
-                                            contentDescription = "Captured Image",
-                                            contentScale = ContentScale.Crop,
-                                            modifier = Modifier.fillMaxSize()
-                                        )
-                                    }
-                                }
-                            }
-                        }
                     }
+                }
+            }
 
-                    // Bottom scanning section
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
-                            .background(EmotionTheme.colors.backgroundSecondary)
-                            .padding(top = 42.dp, bottom = 32.dp)
-                    ) {
+            // Bottom section - now responsive to detection state
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+                    .background(EmotionTheme.colors.backgroundSecondary)
+                    .padding(top = 32.dp, bottom = 32.dp)
+            ) {
+                when (val detectionStateLocal = detectionState) {
+                    is EnhancedEmotionDetectionState.Success -> {
+                        // Show detection result with inline UI
+                        DetectionResultContent(
+                            dominantEmotion = detectionStateLocal.dominantEmotion,
+                            emotionScores = detectionStateLocal.emotionScores,
+                            onSaveEntry = { selectedTags, note ->
+                                viewModel.saveEmotionEntry(selectedTags, note)
+                            },
+                            onRestart = {
+                                viewModel.resetState()
+                                capturedImagePath = null
+                            }
+                        )
+                    }
+                    is EnhancedEmotionDetectionState.Loading -> {
+                        // Show loading state
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text(
-                                text = when (faceDetectionState) {
-                                    FaceDetectionState.FaceDetected -> "Face Detected"
-                                    FaceDetectionState.NoFaceDetected -> "Align your face with the frame"
-                                    FaceDetectionState.Initial -> "Starting..."
-                                },
+                                text = "Analyzing emotion...",
                                 color = EmotionTheme.colors.textPrimary,
                                 fontSize = 24.sp,
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.padding(bottom = 24.dp)
                             )
 
-                            when (val detectionStateLocal = detectionState) {
-                                is EnhancedEmotionDetectionState.Loading -> {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(120.dp)
-                                            .background(EmotionTheme.colors.interactive, CircleShape),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        CircularProgressIndicator(
-                                            color = EmotionTheme.colors.textPrimary,
-                                            modifier = Modifier.size(60.dp)
-                                        )
-                                    }
-                                }
+                            Box(
+                                modifier = Modifier
+                                    .size(120.dp)
+                                    .background(EmotionTheme.colors.interactive, CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(
+                                    color = EmotionTheme.colors.textPrimary,
+                                    modifier = Modifier.size(60.dp)
+                                )
+                            }
+                        }
+                    }
+                    else -> {
+                        // Show scan interface
+                        ScanInterfaceContent(
+                            faceDetectionState = faceDetectionState,
+                            isDetectButtonEnabled = isDetectButtonEnabled,
+                            scansRemaining = scansRemaining.value,
+                            onScanClick = {
+                                val captureInstance = imageCapture ?: return@ScanInterfaceContent
 
-                                else -> {
-                                    // Scan button
-                                    Box(
-                                        modifier = Modifier
-                                            .alpha(if (isDetectButtonEnabled) 1f else 0.5f)
-                                            .size(120.dp)
-                                            .background(EmotionTheme.colors.interactive, CircleShape)
-                                            .clickable(enabled = isDetectButtonEnabled) {
-                                                val captureInstance = imageCapture ?: return@clickable
+                                try {
+                                    val photoFile = createTempFile(context.cacheDir)
+                                    val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
 
+                                    captureInstance.takePicture(
+                                        outputOptions,
+                                        ContextCompat.getMainExecutor(context),
+                                        object : ImageCapture.OnImageSavedCallback {
+                                            override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
                                                 try {
-                                                    val photoFile = createTempFile(context.cacheDir)
-                                                    val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
-
-                                                    captureInstance.takePicture(
-                                                        outputOptions,
-                                                        ContextCompat.getMainExecutor(context),
-                                                        object : ImageCapture.OnImageSavedCallback {
-                                                            override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-                                                                try {
-                                                                    val bytes = photoFile.readBytes()
-                                                                    viewModel.detectEmotion(bytes, 0, 0, photoFile.absolutePath)
-                                                                    capturedImagePath = photoFile.absolutePath
-                                                                    scansRemaining.value -= 1
-                                                                } catch (e: Exception) {
-                                                                    println("Error reading file: ${e.message}")
-                                                                }
-                                                            }
-
-                                                            override fun onError(exception: ImageCaptureException) {
-                                                                println("Error capturing image: ${exception.message}")
-                                                            }
-                                                        }
-                                                    )
+                                                    val bytes = photoFile.readBytes()
+                                                    viewModel.detectEmotion(bytes, 0, 0, photoFile.absolutePath)
+                                                    capturedImagePath = photoFile.absolutePath
+                                                    scansRemaining.value -= 1
                                                 } catch (e: Exception) {
-                                                    println("Error in takePicture process: ${e.message}")
+                                                    println("Error reading file: ${e.message}")
                                                 }
-                                            },
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            text = "SCAN",
-                                            color = EmotionTheme.colors.textPrimary,
-                                            fontSize = 24.sp,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    }
+                                            }
+
+                                            override fun onError(exception: ImageCaptureException) {
+                                                println("Error capturing image: ${exception.message}")
+                                            }
+                                        }
+                                    )
+                                } catch (e: Exception) {
+                                    println("Error in takePicture process: ${e.message}")
                                 }
                             }
-
-                            Spacer(modifier = Modifier.height(16.dp))
-
-                            Text(
-                                text = "${scansRemaining.value}/5 scans remaining today",
-                                color = EmotionTheme.colors.textPrimary,
-                                fontSize = 16.sp
-                            )
-                        }
+                        )
                     }
                 }
             }
@@ -1145,8 +1021,415 @@ fun EmotionDetectionScreen(
     }
 }
 
+@Composable
+private fun ScanInterfaceContent(
+    faceDetectionState: FaceDetectionState,
+    isDetectButtonEnabled: Boolean,
+    scansRemaining: Int,
+    onScanClick: () -> Unit
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text(
+            text = when (faceDetectionState) {
+                FaceDetectionState.FaceDetected -> "Face Detected"
+                FaceDetectionState.NoFaceDetected -> "Align your face with the frame"
+                FaceDetectionState.Initial -> "Starting..."
+            },
+            color = EmotionTheme.colors.textPrimary,
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(bottom = 24.dp)
+        )
+
+        // Scan button
+        Box(
+            modifier = Modifier
+                .alpha(if (isDetectButtonEnabled) 1f else 0.5f)
+                .size(120.dp)
+                .background(EmotionTheme.colors.interactive, CircleShape)
+                .clickable(enabled = isDetectButtonEnabled) { onScanClick() },
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "SCAN",
+                color = EmotionTheme.colors.textPrimary,
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text = "$scansRemaining/5 scans remaining today",
+            color = EmotionTheme.colors.textPrimary,
+            fontSize = 16.sp
+        )
+    }
+}
+
+@Composable
+private fun DetectionResultContent(
+    dominantEmotion: Emotion,
+    emotionScores: Map<Emotion, Float>,
+    onSaveEntry: (selectedTags: List<ContextTag>, note: String) -> Unit,
+    onRestart: () -> Unit
+) {
+    var selectedTags by remember { mutableStateOf(setOf<ContextTag>()) }
+    var moodNote by remember { mutableStateOf("") }
+    var showAllTags by remember { mutableStateOf(false) }
+    var isExpanded by remember { mutableStateOf(false) }
+
+    val currentTime = remember {
+        val now = Clock.System.now()
+        val localDateTime = now.toLocalDateTime(TimeZone.currentSystemDefault())
+        "${localDateTime.hour}:${localDateTime.minute.toString().padStart(2, '0')}"
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(
+                if (isExpanded) {
+                    Modifier.verticalScroll(rememberScrollState())
+                } else Modifier
+            )
+    ) {
+        // Main detection result header - matches your UI
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "I detect",
+                style = MaterialTheme.typography.headlineSmall,
+                color = EmotionTheme.colors.textPrimary,
+                fontWeight = FontWeight.Bold
+            )
+
+            Text(
+                text = dominantEmotion.name.lowercase().replaceFirstChar { it.uppercase() },
+                style = MaterialTheme.typography.headlineSmall,
+                color = getEmotionColor(dominantEmotion),
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Context tags section
+        Text(
+            text = "Add Context Tags:",
+            style = MaterialTheme.typography.titleMedium,
+            color = EmotionTheme.colors.textPrimary,
+            modifier = Modifier.padding(horizontal = 24.dp)
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Tag selection - showing limited tags initially
+        val visibleTags = if (showAllTags) ContextTag.values().toList()
+        else ContextTag.values().take(4).toList()
+
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = PaddingValues(horizontal = 24.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            items(visibleTags) { tag ->
+                ContextTagChip(
+                    tag = tag,
+                    isSelected = selectedTags.contains(tag),
+                    onToggle = {
+                        selectedTags = if (selectedTags.contains(tag)) {
+                            selectedTags - tag
+                        } else {
+                            selectedTags + tag
+                        }
+                    }
+                )
+            }
+
+            if (!showAllTags && ContextTag.values().size > 4) {
+                item {
+                    IconButton(
+                        onClick = {
+                            showAllTags = true
+                            isExpanded = true
+                        },
+                        modifier = Modifier
+                            .size(48.dp)
+                            .background(
+                                EmotionTheme.colors.backgroundSecondary,
+                                CircleShape
+                            )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "More tags",
+                            tint = EmotionTheme.colors.interactive
+                        )
+                    }
+                }
+            }
+        }
+
+        // Expandable content
+        if (isExpanded) {
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Time display
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Time of Scan",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = EmotionTheme.colors.textSecondary
+                )
+                Text(
+                    text = currentTime,
+                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+                    color = EmotionTheme.colors.textPrimary
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Mood note section
+            Text(
+                text = "Mood Note",
+                style = MaterialTheme.typography.titleMedium,
+                color = EmotionTheme.colors.textPrimary,
+                modifier = Modifier.padding(horizontal = 24.dp)
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            OutlinedTextField(
+                value = moodNote,
+                onValueChange = { moodNote = it },
+                placeholder = {
+                    Text(
+                        "I enjoyed a good gym session today and also took my dog for a walk in the park",
+                        color = EmotionTheme.colors.textSecondary.copy(alpha = 0.7f)
+                    )
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp)
+                    .padding(horizontal = 24.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = EmotionTheme.colors.interactive,
+                    unfocusedBorderColor = EmotionTheme.colors.textSecondary.copy(alpha = 0.3f),
+                    focusedTextColor = EmotionTheme.colors.textPrimary,
+                    unfocusedTextColor = EmotionTheme.colors.textPrimary,
+                    cursorColor = EmotionTheme.colors.interactive,
+                    focusedContainerColor = Color.Transparent,
+                    unfocusedContainerColor = Color.Transparent
+                ),
+                maxLines = 4
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // Action buttons
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                EmotionButton(
+                    text = "Save Entry",
+                    onClick = {
+                        onSaveEntry(selectedTags.toList(), moodNote)
+                    },
+                    modifier = Modifier.weight(1f),
+                    contentColor = EmotionTheme.colors.textPrimary
+                )
+
+                OutlinedButton(
+                    onClick = onRestart,
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = EmotionTheme.colors.interactive
+                    ),
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.dp,
+                        EmotionTheme.colors.interactive
+                    )
+                ) {
+                    Text(
+                        text = "Restart",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
+        } else {
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Expand button when collapsed
+            TextButton(
+                onClick = { isExpanded = true },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "Add details and save",
+                    color = EmotionTheme.colors.interactive,
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ContextTagChip(
+    tag: ContextTag,
+    isSelected: Boolean,
+    onToggle: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val backgroundColor = if (isSelected) {
+        EmotionTheme.colors.interactive
+    } else {
+        EmotionTheme.colors.backgroundSecondary
+    }
+
+    val textColor = if (isSelected) {
+        Color.White
+    } else {
+        EmotionTheme.colors.textPrimary
+    }
+
+    Row(
+        modifier = modifier
+            .clip(RoundedCornerShape(24.dp))
+            .background(backgroundColor)
+            .clickable { onToggle() }
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .then(
+                if (!isSelected) {
+                    Modifier.border(
+                        1.dp,
+                        EmotionTheme.colors.textSecondary.copy(alpha = 0.3f),
+                        RoundedCornerShape(24.dp)
+                    )
+                } else Modifier
+            ),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Text(
+            text = tag.icon,
+            fontSize = 16.sp
+        )
+        Text(
+            text = tag.displayName,
+            style = MaterialTheme.typography.bodyMedium,
+            color = textColor
+        )
+    }
+}
+
+@Composable
+fun CameraPreviewWithImageCaptureAndAnalysis(
+    viewModel: EnhancedEmotionDetectionViewModel,
+    onImageCaptureCreated: (ImageCapture) -> Unit,
+    observedFaceDetectionState: FaceDetectionState
+) {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val previewView = remember { PreviewView(context) }
+    val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
+
+    var lastAnalysisTimeMs by remember { mutableStateOf(0L) }
+    val analysisIntervalMs = 750L
+
+    DisposableEffect(lifecycleOwner, viewModel) {
+        val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
+
+        cameraProviderFuture.addListener({
+            try {
+                val cameraProvider = cameraProviderFuture.get()
+                cameraProvider.unbindAll()
+
+                val preview = Preview.Builder()
+                    .setTargetResolution(android.util.Size(640, 480))
+                    .build().also { it.setSurfaceProvider(previewView.surfaceProvider) }
+
+                val imageCapture = ImageCapture.Builder()
+                    .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+                    .build()
+
+                val imageAnalysis = ImageAnalysis.Builder()
+                    .setTargetResolution(android.util.Size(640, 480))
+                    .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                    .build()
+
+                imageAnalysis.setAnalyzer(
+                    cameraExecutor,
+                    ImageAnalysis.Analyzer { imageProxy ->
+                        val currentTimeMs = System.currentTimeMillis()
+                        if (currentTimeMs - lastAnalysisTimeMs >= analysisIntervalMs) {
+                            lastAnalysisTimeMs = currentTimeMs
+                            viewModel.analyzeFaceInImageProxy(imageProxy)
+                        } else {
+                            imageProxy.close()
+                        }
+                    }
+                )
+
+                cameraProvider.bindToLifecycle(
+                    lifecycleOwner,
+                    CameraSelector.DEFAULT_FRONT_CAMERA,
+                    preview,
+                    imageCapture,
+                    imageAnalysis
+                )
+                onImageCaptureCreated(imageCapture)
+                Log.d("CameraPreview", "Camera setup with all use cases successful.")
+
+            } catch (e: Exception) {
+                Log.e("CameraPreview", "Camera setup failed", e)
+            }
+        }, ContextCompat.getMainExecutor(context))
+
+        onDispose {
+            Log.d("CameraPreview", "Disposing camera preview, shutting down executor.")
+            cameraExecutor.shutdown()
+        }
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        AndroidView({ previewView }, modifier = Modifier.fillMaxSize())
+    }
+}
+
 private fun createTempFile(cacheDir: File): File {
     return File.createTempFile("emotion_image_", ".jpg", cacheDir).apply {
         deleteOnExit()
+    }
+}
+
+private fun getEmotionColor(emotion: Emotion): Color {
+    return when (emotion) {
+        Emotion.JOY -> Color(0xFFFFD900)
+        Emotion.SADNESS -> Color(0xFF1E2761)
+        Emotion.ANGER -> Color(0xFFFF4444)
+        Emotion.NEUTRAL -> Color(0xFF888888)
     }
 }

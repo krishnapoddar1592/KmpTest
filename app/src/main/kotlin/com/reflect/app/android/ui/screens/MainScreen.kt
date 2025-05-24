@@ -54,6 +54,7 @@ import com.reflect.app.ml.viewmodel.EmotionDetectionViewModel
 import com.reflect.app.viewmodels.CalendarViewModel
 import com.reflect.app.viewmodels.EnhancedEmotionDetectionViewModel
 import kotlinx.datetime.LocalDate
+import androidx.compose.runtime.DisposableEffect
 
 @Composable
 fun MainScreen(
@@ -68,10 +69,38 @@ fun MainScreen(
 ) {
     var selectedTab by remember { mutableStateOf("Home") }
     var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
+    var previousTab by remember { mutableStateOf("Home") }
 
     // Load mock data for calendar (remove in production)
     LaunchedEffect(Unit) {
         calendarViewModel.loadFullMockData()
+    }
+
+    // Handle ViewModel lifecycle based on tab changes
+    LaunchedEffect(selectedTab) {
+        when {
+            // Coming TO Home tab from another tab
+            selectedTab == "Home" && previousTab != "Home" -> {
+                // Prepare for resuming (don't close detector)
+                emotionDetectionViewModel.prepareForPause()
+            }
+            // Leaving FROM Home tab to another tab
+            selectedTab != "Home" && previousTab == "Home" -> {
+                // Prepare for pausing (don't close detector, just pause)
+                emotionDetectionViewModel.prepareForPause()
+            }
+        }
+        previousTab = selectedTab
+    }
+
+    // Handle final cleanup when leaving the screen entirely
+    DisposableEffect(Unit) {
+        onDispose {
+            // Only close detector if we're actually leaving the app/screen permanently
+            if (selectedTab == "Home") {
+                emotionDetectionViewModel.prepareForDestroy()
+            }
+        }
     }
 
     Scaffold(
@@ -118,7 +147,7 @@ fun MainScreen(
                     CalendarScreen(
                         onDayClick = { date -> selectedDate = date },
                         emotionData = dayEmotionSummaries,
-                        emotionEntries =calendarViewModel.emotionEntries.value
+                        emotionEntries = calendarViewModel.emotionEntries.value
                         // Needed for weekly view details
                     )
                 }
@@ -188,9 +217,6 @@ fun HomeContent(
         )
     }
 }
-
-// The StatsContent is no longer needed since we're using EmotionStatsScreen directly
-// You can remove the old StatsContent function
 
 @Composable
 fun CalendarContent() {

@@ -48,6 +48,9 @@ class EnhancedEmotionDetectionViewModel(
     private var currentDetectionResults: Pair<Emotion, Map<Emotion, Float>>? = null
     private var currentImagePath: String? = null
 
+    // Track if this instance should close resources
+    private var shouldCloseOnCleared = true
+
     fun analyzeFaceInImageProxy(imageProxy: Any) {
         coroutineScope.launch {
             try {
@@ -122,11 +125,31 @@ class EnhancedEmotionDetectionViewModel(
         _faceDetectionState.value = FaceDetectionState.Initial
         currentDetectionResults = null
         currentImagePath = null
+        // Don't close the detector here, it's still needed
+    }
+
+    /**
+     * Call this when the screen is being destroyed permanently
+     * (not just when navigating away temporarily)
+     */
+    fun prepareForDestroy() {
+        shouldCloseOnCleared = true
+    }
+
+    /**
+     * Call this when the screen is just being paused/hidden
+     * (when navigating away but might come back)
+     */
+    fun prepareForPause() {
+        shouldCloseOnCleared = false
     }
 
     override fun onCleared() {
         super.onCleared()
-        emotionDetectionUseCase.close()
+        // Only close resources if this is a permanent destroy
+        if (shouldCloseOnCleared) {
+            emotionDetectionUseCase.close()
+        }
     }
 }
 
@@ -178,15 +201,3 @@ fun generateMockEmotionEntries(): List<EmotionEntry> {
         )
     )
 }
-
-// Alternative: If you prefer a simpler approach, you can also use this inline
-// Replace IdGenerator.generateUuidLikeId() with any of these:
-
-// Simple timestamp-based:
-// id = Clock.System.now().toEpochMilliseconds().toString()
-
-// Timestamp + random:
-// id = "${Clock.System.now().toEpochMilliseconds()}_${kotlin.random.Random.nextInt(1000, 9999)}"
-
-// Random string:
-// id = (1..16).map { "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789".random() }.joinToString("")
