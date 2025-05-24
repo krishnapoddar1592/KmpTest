@@ -15,6 +15,14 @@ class IosEmotionDetector : EmotionDetector {
         return Emotion.values().associateWith { 0f }
     }
 
+    override suspend fun detectFace(imageData: ByteArray, width: Int, height: Int): Boolean {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun detectFaceInImageProxy(imageProxyInput: Any): Boolean {
+        TODO("Not yet implemented")
+    }
+
     override fun close() {
         // This is handled in Swift
     }

@@ -39,15 +39,21 @@ import com.reflect.app.android.ui.theme.EmotionTheme
 import com.reflect.app.android.ui.theme.EmotionTheme.currentTheme
 import com.reflect.app.android.ui.theme.ThemeManager
 import com.reflect.app.android.ui.theme.Typography
- import androidx.compose.material3.Scaffold
- import androidx.compose.ui.unit.dp
- import androidx.compose.runtime.getValue
- import androidx.compose.runtime.setValue
- import androidx.compose.runtime.remember
- import androidx.compose.runtime.mutableStateOf
+import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.res.painterResource
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.reflect.app.android.R
 import com.reflect.app.ml.viewmodel.EmotionDetectionViewModel
+import com.reflect.app.viewmodels.CalendarViewModel
+import com.reflect.app.viewmodels.EnhancedEmotionDetectionViewModel
+import kotlinx.datetime.LocalDate
 
 @Composable
 fun MainScreen(
@@ -56,41 +62,69 @@ fun MainScreen(
     onSignOut: () -> Unit,
     onToggleTheme: () -> Unit,
     currentTheme: EmotionAppTheme,
-    emotionDetectionViewModel: EmotionDetectionViewModel,
-    onNavigateBack: ()-> Unit
+    emotionDetectionViewModel: EnhancedEmotionDetectionViewModel,
+    calendarViewModel: CalendarViewModel = viewModel(),
+    onNavigateBack: () -> Unit
 ) {
     var selectedTab by remember { mutableStateOf("Home") }
+    var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
 
-    // Using Scaffold is the recommended way to implement screens with bottom navigation
+    // Load mock data for calendar (remove in production)
+    LaunchedEffect(Unit) {
+        calendarViewModel.loadFullMockData()
+    }
+
     Scaffold(
         bottomBar = {
             BottomNavigationBar(
                 selectedRoute = selectedTab,
-                onTabSelected = { selectedTab = it }
+                onTabSelected = {
+                    selectedTab = it
+                    // Reset selected date when changing tabs
+                    if (it != "Calendar") {
+                        selectedDate = null
+                    }
+                }
             )
         },
-        modifier = Modifier.background(EmotionTheme.colors.background)
+        modifier = Modifier.fillMaxSize()
     ) { paddingValues ->
-        // Content based on selected tab, with padding applied from scaffold
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues) // This automatically handles the padding needed for the bottom bar
-                .background(EmotionTheme.colors.background)
+                .padding(paddingValues)
         ) {
-            when (selectedTab) {
-//                "Home" -> HomeContent(
-//                    onEmotionDetectionClick = onEmotionDetectionClick,
-//                    onPremiumClick = onPremiumClick
-//                )
-                "Home" -> EmotionDetectionScreen(
-                    viewModel = emotionDetectionViewModel,
-                    onNavigateBack = onNavigateBack
-                )
-                "Stats" -> StatsContent()
-                "Calendar" -> CalendarContent()
-                "Breathing" -> BreathingContent()
-                "Settings" -> SettingsScreen(
+            when {
+                selectedDate != null -> {
+                    // Show day insights screen
+                    val entries by calendarViewModel.emotionEntries.collectAsState()
+                    val dayEntries = entries[selectedDate] ?: emptyList()
+
+                    DayInsightsScreen(
+                        date = selectedDate!!,
+                        entries = dayEntries,
+                        onNavigateBack = { selectedDate = null }
+                    )
+                }
+                selectedTab == "Home" -> {
+                    EnhancedEmotionDetectionScreen(
+                        viewModel = emotionDetectionViewModel,
+                        onNavigateBack = onNavigateBack
+                    )
+                }
+                selectedTab == "Calendar" -> {
+                    val dayEmotionSummaries by calendarViewModel.dayEmotionSummaries.collectAsState()
+
+                    CalendarScreen(
+                        onDayClick = { date -> selectedDate = date },
+                        emotionData = dayEmotionSummaries,
+                        emotionEntries =calendarViewModel.emotionEntries.value
+                        // Needed for weekly view details
+                    )
+                }
+                selectedTab == "Stats" -> EmotionStatsScreen()
+                selectedTab == "Breathing" -> BreathingContent()
+                selectedTab == "Settings" -> SettingsScreen(
                     currentTheme = currentTheme,
                     onToggleTheme = onToggleTheme,
                     onSignOut = onSignOut
@@ -118,15 +152,15 @@ fun HomeContent(
             color = EmotionTheme.colors.textPrimary,
             textAlign = TextAlign.Center
         )
-        
+
         Text(
             text = "A journey to self-awareness starts here.",
             style = Typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        
+
         Spacer(modifier = Modifier.height(32.dp))
-        
+
         // Feature cards
         FeatureCard(
             title = "Detect Emotion",
@@ -134,18 +168,18 @@ fun HomeContent(
             iconResId = android.R.drawable.ic_menu_camera, // Replace with your icon
             onClick = onEmotionDetectionClick
         )
-        
+
         Spacer(modifier = Modifier.height(16.dp))
-        
+
         FeatureCard(
             title = "Premium Features",
             description = "Unlock advanced emotion tracking and insights",
             iconResId = android.R.drawable.ic_menu_compass, // Replace with your icon
             onClick = onPremiumClick
         )
-        
+
         Spacer(modifier = Modifier.height(16.dp))
-        
+
         FeatureCard(
             title = "Breathing Exercises",
             description = "Guided breathing exercises to help manage emotions",
@@ -155,27 +189,8 @@ fun HomeContent(
     }
 }
 
-@Composable
-fun StatsContent() {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = "Your Emotion Stats",
-            style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(vertical = 24.dp)
-        )
-        
-        Text(
-            text = "Statistics will appear here once you track more emotions",
-            style = Typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
+// The StatsContent is no longer needed since we're using EmotionStatsScreen directly
+// You can remove the old StatsContent function
 
 @Composable
 fun CalendarContent() {
@@ -190,7 +205,7 @@ fun CalendarContent() {
             style = MaterialTheme.typography.headlineMedium,
             modifier = Modifier.padding(vertical = 24.dp)
         )
-        
+
         Text(
             text = "Your emotion history will be displayed here",
             style = Typography.bodyLarge,
@@ -212,7 +227,7 @@ fun BreathingContent() {
             style = MaterialTheme.typography.headlineMedium,
             modifier = Modifier.padding(vertical = 24.dp)
         )
-        
+
         Text(
             text = "Guided breathing exercises will appear here",
             style = Typography.bodyLarge,

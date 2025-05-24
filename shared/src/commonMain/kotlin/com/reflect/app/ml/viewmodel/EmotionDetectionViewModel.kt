@@ -1,6 +1,6 @@
 package com.reflect.app.ml.viewmodel
 
-import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.coroutineScope
 import com.reflect.app.ml.Emotion
 import com.reflect.app.ml.usecase.EmotionDetectionUseCase
 import com.reflect.app.models.ViewModel
@@ -41,7 +41,7 @@ class EmotionDetectionViewModel(
     fun analyzeFaceInFrame(imageData: ByteArray, width: Int, height: Int) {
         // Using print for simplicity as in your example, replace with proper logging
         print("EmotionDetectionViewModel, Analyzing frame (ByteArray) - size: ${imageData.size}, dimensions: ${width}x${height}\n")
-        viewModelScope.launch {
+        coroutineScope.launch {
             try {
                 val hasFace = emotionDetectionUseCase.detectFace(imageData, width, height)
                 val newState = if (hasFace) FaceDetectionState.FaceDetected else FaceDetectionState.NoFaceDetected
@@ -58,7 +58,7 @@ class EmotionDetectionViewModel(
     fun analyzeFaceInImageProxy(imageProxy: Any) { // Parameter is Any
         // Using print for simplicity, replace with proper logging
         // print("EmotionDetectionViewModel, Analyzing frame (ImageProxy)\n")
-        viewModelScope.launch {
+        coroutineScope.launch {
             try {
                 // The imageProxy object is passed through.
                 // The AndroidEmotionDetector is responsible for casting and closing it.
@@ -76,8 +76,8 @@ class EmotionDetectionViewModel(
 
     fun detectEmotion(imageData: ByteArray, width: Int, height: Int) {
         _detectionState.value = EmotionDetectionState.Loading
-        // Using viewModelScope if private coroutineScope is removed
-        viewModelScope.launch {
+        // Using coroutineScope if private coroutineScope is removed
+        coroutineScope.launch {
             try {
                 val emotionScores = emotionDetectionUseCase.detectEmotionScores(imageData, width, height)
                 val dominantEmotion = emotionScores.maxByOrNull { it.value }?.key ?: Emotion.NEUTRAL

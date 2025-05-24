@@ -88,7 +88,6 @@
 // File: MainActivity.kt
 package com.reflect.app.android
 
-import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -97,9 +96,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.NavHost
@@ -112,24 +108,22 @@ import com.reflect.app.android.session.SessionManager
 import com.reflect.app.android.ui.screens.MainScreen
 import com.reflect.app.android.ui.screens.EmotionDetectionScreen
 import com.reflect.app.android.ui.screens.LoginScreen
-import com.reflect.app.android.ui.screens.MainScreen
 import com.reflect.app.android.ui.screens.PremiumScreen
 import com.reflect.app.android.ui.screens.RegisterScreen
 import com.reflect.app.android.ui.screens.WelcomeScreen
 import com.reflect.app.android.ui.theme.EmotionAppTheme
-import com.reflect.app.android.ui.theme.EmotionAppTheme.COSMIC
-import com.reflect.app.android.ui.theme.EmotionAppTheme.SERENE
 import com.reflect.app.android.ui.theme.ThemeManager
 import com.reflect.app.auth.viewmodel.AuthState
 import com.reflect.app.auth.viewmodel.AuthViewModel
 import com.reflect.app.ml.viewmodel.EmotionDetectionViewModel
+import com.reflect.app.viewmodels.EnhancedEmotionDetectionViewModel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class MainActivity : ComponentActivity() {
     private val authViewModel: AuthViewModel by viewModel()
-    private val emotionDetectionViewModel: EmotionDetectionViewModel by viewModel()
+    private val emotionDetectionViewModel: EnhancedEmotionDetectionViewModel by viewModel()
 
     // Initialize the GoogleSignInHelper
     private lateinit var googleSignInHelper: GoogleSignInHelper

@@ -44,6 +44,13 @@ android {
 //    packagingOptions {
 //        pickFirst("lib/arm64-v8a/libtensorflowlite_gpu_jni.so")
 //    }
+    packaging {
+        resources {
+            pickFirsts += setOf(
+                "META-INF/versions/9/OSGI-INF/MANIFEST.MF"
+            )
+        }
+    }
 }
 
 kotlin {

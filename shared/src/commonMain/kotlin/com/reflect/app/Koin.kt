@@ -16,6 +16,8 @@ import com.reflect.app.auth.viewmodel.AuthViewModel
 import com.reflect.app.ml.EmotionDetectorFactory
 import com.reflect.app.ml.usecase.EmotionDetectionUseCase
 import com.reflect.app.ml.viewmodel.EmotionDetectionViewModel
+import com.reflect.app.viewmodels.CalendarViewModel
+import com.reflect.app.viewmodels.EnhancedEmotionDetectionViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -37,7 +39,8 @@ fun initKoin(appModule: Module): KoinApplication {
                 platformModule,
                 coreModule,
                 authModule,
-                mlModule
+                mlModule,
+                enhancedViewModelModule
             )
         }
 
@@ -59,6 +62,17 @@ val mlModule = module {
     factory { EmotionDetectionUseCase(get()) }
     factory { CoroutineScope(SupervisorJob() + Dispatchers.Main) }
     factory { EmotionDetectionViewModel(get(), get()) }
+}
+val enhancedViewModelModule = module {
+    factory { CalendarViewModel() }
+    factory { CoroutineScope(SupervisorJob() + Dispatchers.Main) }
+    factory {
+        EnhancedEmotionDetectionViewModel(
+            emotionDetectionUseCase = get(),
+            calendarViewModel = get(),
+            coroutineScope = get()
+        )
+    }
 }
 // Add to the coreModule or create a new module
 val authModule = module {

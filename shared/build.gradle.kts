@@ -26,6 +26,13 @@ android {
         warningsAsErrors = true
         abortOnError = true
     }
+     packaging {
+         resources {
+             pickFirsts += setOf(
+                 "META-INF/versions/9/OSGI-INF/MANIFEST.MF"
+             )
+         }
+     }
 }
 
 version = "1.2"
@@ -113,6 +120,7 @@ dependencies {
     implementation(libs.vision.common)
     implementation(libs.play.services.mlkit.face.detection)
     implementation(libs.androidx.media3.common.ktx)
+    implementation(libs.identity.jvm)
 }
 
 sqldelight {

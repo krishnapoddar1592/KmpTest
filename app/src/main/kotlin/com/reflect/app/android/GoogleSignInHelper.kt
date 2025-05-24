@@ -15,7 +15,7 @@ class GoogleSignInHelper(private val context: Context) {
 
     private val googleSignInClient: GoogleSignInClient by lazy {
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestIdToken("web_client_id") // Replace with your Web Client ID from Firebase Console
+            .requestIdToken("185563548735-krv35drlnmes5q4oggq5hjng0npc6n34.apps.googleusercontent.com") // Replace with your Web Client ID from Firebase Console
             .requestEmail()
             .build()
 

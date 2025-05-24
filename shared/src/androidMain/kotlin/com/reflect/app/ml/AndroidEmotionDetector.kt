@@ -7,6 +7,10 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Canvas
+import android.graphics.ColorMatrix
+import android.graphics.ColorMatrixColorFilter
+import android.graphics.Paint
 import android.graphics.Rect
 import android.util.Log
 import android.widget.Toast
@@ -35,9 +39,14 @@ class AndroidEmotionDetector(private val context: Context) : EmotionDetector {
     private lateinit var faceDetector: FaceDetector
 
     // Values based on your model analysis
-    private val INPUT_SIZE = 224  // Your model expects 224x224 images
-    private val CHANNELS = 3      // RGB input
-    private val EMOTION_COUNT = 3 // 3 output emotions
+//    private val INPUT_SIZE1 = 720  // Your model expects 224x224 images
+//    private val INPUT_SIZE2 = 480  // Your model expects 224x224 images
+//    private val CHANNELS = 3      // RGB input
+    private val INPUT_SIZE = 64     // Replace with actual model input size (likely 48x48)
+    private val CHANNELS = 1        // Grayscale input, not RGB
+    private val EMOTION_COUNT = 7
+    //    private val EMOTION_COUNT = 3 // 3 output emotions
+//    private val EMOTION_COUNT = 4 // 4 output emotions
 
     init {
         try {
@@ -148,69 +157,7 @@ class AndroidEmotionDetector(private val context: Context) : EmotionDetector {
         return false
     }
 
-//    @SuppressLint("UnsafeOptInUsageError") // For imageProxy.image
-//    override suspend fun detectFaceInImageProxy(imageProxyInput: Any): Boolean = suspendCancellableCoroutine { continuation ->
-//        val imageProxy = imageProxyInput as? ImageProxy
-//            ?: run {
-//                Log.e("EmotionDetector", "Invalid ImageProxy type passed to detectFaceInImageProxy.")
-//                if (continuation.isActive) continuation.resume(false)
-//                return@suspendCancellableCoroutine
-//            }
-//
-//        // Primary mechanism for closing if the coroutine is cancelled.
-//        continuation.invokeOnCancellation {
-//            // Log.d("EmotionDetector", "ImageProxy analysis cancelled, closing proxy.")
-//            imageProxy.close()
-//        }
-//
-//        val mediaImage = imageProxy.image
-//        if (mediaImage == null) {
-//            Log.e("EmotionDetector", "MediaImage is null from ImageProxy.")
-//            if (continuation.isActive) continuation.resume(false)
-//            // If not cancelled and we are resuming, ensure it's closed as we are done with it.
-//            if (!continuation.isCancelled) {
-//                imageProxy.close()
-//            }
-//            return@suspendCancellableCoroutine
-//        }
-//
-//        try {
-//            val rotationDegrees = imageProxy.imageInfo.rotationDegrees
-//            val inputImage = InputImage.fromMediaImage(mediaImage, rotationDegrees)
-//
-//            faceDetector.process(inputImage)
-//                .addOnSuccessListener { faces ->
-//
-//                    if (continuation.isActive) {
-//                        // Log.d("EmotionDetector", "Face detection (ImageProxy) success: ${faces.size} faces")
-//                        continuation.resume(faces.isNotEmpty())
-//                    }
-//                }
-//                .addOnFailureListener { e ->
-//                    Log.e("EmotionDetector", "Face detection (ImageProxy) failed", e)
-//                    if (continuation.isActive) {
-//                        continuation.resume(false)
-//                    }
-//                }
-//                .addOnCompleteListener {
-//                    // This ensures the proxy is closed once the ML Kit task is truly complete,
-//                    // if the coroutine itself hasn't been cancelled.
-//                    if (!continuation.isCancelled) {
-//                        // Log.d("EmotionDetector", "ML Kit task complete, closing proxy.")
-//                        imageProxy.close()
-//                    }
-//                }
-//        } catch (e: Exception) { // Catches exceptions from fromMediaImage or synchronous part of process()
-//            Log.e("EmotionDetector", "Error processing ImageProxy for face detection", e)
-//            if (continuation.isActive) {
-//                continuation.resume(false)
-//            }
-//            // If an exception occurred here, and it's not cancelled, close the proxy.
-//            if (!continuation.isCancelled) {
-//                imageProxy.close()
-//            }
-//        }
-//    }
+
 
 
 
@@ -260,7 +207,9 @@ class AndroidEmotionDetector(private val context: Context) : EmotionDetector {
     // Rest of the existing methods remain the same...
     private fun setupModel() {
         try {
-            val fileDescriptor = context.assets.openFd("best_float_final.tflite")
+//            val fileDescriptor = context.assets.openFd("best_float_final.tflite")
+//            val fileDescriptor = context.assets.openFd("model.tflite")
+            val fileDescriptor = context.assets.openFd("emotionModel.tflite")
             val inputStream = fileDescriptor.createInputStream()
             val fileChannel = inputStream.channel
             val startOffset = fileDescriptor.startOffset
@@ -276,6 +225,8 @@ class AndroidEmotionDetector(private val context: Context) : EmotionDetector {
             }
 
             interpreter = Interpreter(model, options)
+            inspectModelInputShape()
+
             Log.d("EmotionDetector", "Model loaded successfully")
         } catch (e: Exception) {
             Log.e("EmotionDetector", "Failed to load model", e)
@@ -328,6 +279,112 @@ class AndroidEmotionDetector(private val context: Context) : EmotionDetector {
             safeRect.height()
         )
     }
+//    override suspend fun detectEmotion(imageData: ByteArray, width: Int, height: Int): Map<Emotion, Float> {
+//
+//        if (interpreter == null) {
+//            Log.d("EmotionDetector", "TFLite model not available, using mock data")
+//            return mockEmotionData()
+//        }
+//
+//        try {
+//            // Decode the image
+//            val bitmap = BitmapFactory.decodeByteArray(imageData, 0, imageData.size)
+//
+//            // Step 1: Detect face
+//            val faceRect = detectFace(bitmap)
+//
+//            // Process the image
+//            val processedBitmap = if (faceRect != null) {
+//                // Step 2: Crop to face area
+//                val faceBitmap = cropFaceBitmap(bitmap, faceRect)
+//                // Step 3: Resize to INPUT_SIZE
+//                Bitmap.createScaledBitmap(faceBitmap, INPUT_SIZE1, INPUT_SIZE2, true)
+//            } else {
+//                // No face detected, use the whole image
+//                Log.d("EmotionDetector", "No face detected, using full image")
+//                Bitmap.createScaledBitmap(bitmap, INPUT_SIZE1, INPUT_SIZE2, true)
+//            }
+//
+//            // Get pixel data from the processed bitmap
+//            val pixels = IntArray(INPUT_SIZE1 * INPUT_SIZE2)
+//            processedBitmap.getPixels(pixels, 0, INPUT_SIZE1, 0, 0, INPUT_SIZE1, INPUT_SIZE2)
+//
+//            // Prepare input (NHWC format - batch, height, width, channels)
+//            val inputBuffer = ByteBuffer.allocateDirect(4 * INPUT_SIZE1 * INPUT_SIZE2 * CHANNELS)
+//            inputBuffer.order(ByteOrder.nativeOrder())
+//
+//            // Process each pixel - normalize to [0,1]
+//            for (y in 0 until INPUT_SIZE1) {
+//                for (x in 0 until INPUT_SIZE2) {
+//                    val pixel = pixels[y * INPUT_SIZE2 + x]
+//
+//                    // Extract RGB values and normalize to [0,1]
+//                    val r = (pixel shr 16 and 0xFF) / 255.0f
+//                    val g = (pixel shr 8 and 0xFF) / 255.0f
+//                    val b = (pixel and 0xFF) / 255.0f
+//
+//                    // Add normalized RGB values to buffer
+//                    inputBuffer.putFloat(r)
+//                    inputBuffer.putFloat(g)
+//                    inputBuffer.putFloat(b)
+//                }
+//            }
+//
+//            // Reset position
+//            inputBuffer.flip()
+//
+//            // Prepare output buffer
+//            val outputBuffer = Array(1) { FloatArray(EMOTION_COUNT) }
+//
+//            // Run inference
+//            interpreter?.run(inputBuffer, outputBuffer)
+//
+//            // Map results to emotions
+//            println("anger"+outputBuffer[0][0])
+//            println("joy"+outputBuffer[0][1])
+//            println("neutral"+outputBuffer[0][2])
+//            println("sadness"+outputBuffer[0][3])
+//            return mapOf(
+//                Emotion.ANGER to outputBuffer[0][0],
+//                Emotion.JOY to outputBuffer[0][1],
+//                Emotion.NEUTRAL to outputBuffer[0][2],
+//                Emotion.SADNESS to outputBuffer[0][3]
+//            )
+//
+//        } catch (e: Exception) {
+//            Log.e("EmotionDetector", "Error during emotion detection", e)
+//            e.printStackTrace()
+//            return mockEmotionData()
+//        }
+//    }
+    private fun inspectModelInputShape() {
+        interpreter?.let { interp ->
+            val inputTensor = interp.getInputTensor(0)
+            val inputShape = inputTensor.shape()
+            Log.d("EmotionDetector", "Model input shape: ${inputShape.contentToString()}")
+            Log.d("EmotionDetector", "Model input type: ${inputTensor.dataType()}")
+
+            // Update INPUT_SIZE based on the actual model input shape
+            // inputShape typically looks like [1, height, width, channels]
+            // So INPUT_SIZE should be inputShape[1] (assuming square input)
+        }
+    }
+    private fun toGrayscale(bitmap: Bitmap): Bitmap {
+        val width = bitmap.width
+        val height = bitmap.height
+        val grayscaleBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+
+        val canvas = Canvas(grayscaleBitmap)
+        val paint = Paint()
+        val colorMatrix = ColorMatrix()
+        colorMatrix.setSaturation(0f) // Convert to grayscale
+        val filter = ColorMatrixColorFilter(colorMatrix)
+        paint.colorFilter = filter
+        canvas.drawBitmap(bitmap, 0f, 0f, paint)
+
+        return grayscaleBitmap
+    }
+
 
     override suspend fun detectEmotion(imageData: ByteArray, width: Int, height: Int): Map<Emotion, Float> {
         if (interpreter == null) {
@@ -336,6 +393,9 @@ class AndroidEmotionDetector(private val context: Context) : EmotionDetector {
         }
 
         try {
+            // Allocate tensors (equivalent to interpreter.allocate_tensors() in Python)
+            interpreter!!.allocateTensors()
+
             // Decode the image
             val bitmap = BitmapFactory.decodeByteArray(imageData, 0, imageData.size)
 
@@ -346,7 +406,7 @@ class AndroidEmotionDetector(private val context: Context) : EmotionDetector {
             val processedBitmap = if (faceRect != null) {
                 // Step 2: Crop to face area
                 val faceBitmap = cropFaceBitmap(bitmap, faceRect)
-                // Step 3: Resize to INPUT_SIZE
+                // Step 3: Resize to model input size
                 Bitmap.createScaledBitmap(faceBitmap, INPUT_SIZE, INPUT_SIZE, true)
             } else {
                 // No face detected, use the whole image
@@ -354,48 +414,85 @@ class AndroidEmotionDetector(private val context: Context) : EmotionDetector {
                 Bitmap.createScaledBitmap(bitmap, INPUT_SIZE, INPUT_SIZE, true)
             }
 
-            // Get pixel data from the processed bitmap
-            val pixels = IntArray(INPUT_SIZE * INPUT_SIZE)
-            processedBitmap.getPixels(pixels, 0, INPUT_SIZE, 0, 0, INPUT_SIZE, INPUT_SIZE)
+            // Convert to grayscale (like in Python version)
+            val grayscaleBitmap = toGrayscale(processedBitmap)
 
-            // Prepare input (NHWC format - batch, height, width, channels)
+            // Get pixel data from grayscale bitmap
+            val pixels = IntArray(INPUT_SIZE * INPUT_SIZE)
+            grayscaleBitmap.getPixels(pixels, 0, INPUT_SIZE, 0, 0, INPUT_SIZE, INPUT_SIZE)
+
+            // Prepare input buffer (NHWC format for single channel grayscale)
             val inputBuffer = ByteBuffer.allocateDirect(4 * INPUT_SIZE * INPUT_SIZE * CHANNELS)
             inputBuffer.order(ByteOrder.nativeOrder())
 
-            // Process each pixel - normalize to [0,1]
+            // Process each pixel with Python-matching preprocessing
             for (y in 0 until INPUT_SIZE) {
                 for (x in 0 until INPUT_SIZE) {
                     val pixel = pixels[y * INPUT_SIZE + x]
 
-                    // Extract RGB values and normalize to [0,1]
-                    val r = (pixel shr 16 and 0xFF) / 255.0f
-                    val g = (pixel shr 8 and 0xFF) / 255.0f
-                    val b = (pixel and 0xFF) / 255.0f
+                    // Extract grayscale value (since it's already grayscale, all RGB channels are the same)
+                    val gray = (pixel and 0xFF)
 
-                    // Add normalized RGB values to buffer
-                    inputBuffer.putFloat(r)
-                    inputBuffer.putFloat(g)
-                    inputBuffer.putFloat(b)
+                    // Normalize to [0,1] like in Python
+                    var normalizedValue = gray / 255.0f
+
+                    // Center around 0 like in Python: (value - 0.5) * 2.0
+                    normalizedValue = (normalizedValue - 0.5f) * 2.0f
+
+                    // Add to buffer
+                    inputBuffer.putFloat(normalizedValue)
                 }
             }
 
-            // Reset position
-            inputBuffer.flip()
+            // Properly reset the buffer position
+            inputBuffer.rewind()
 
-            // Prepare output buffer
+            // Prepare output buffer (create fresh each time)
             val outputBuffer = Array(1) { FloatArray(EMOTION_COUNT) }
 
-            // Run inference
-            interpreter?.run(inputBuffer, outputBuffer)
+            // Clear any existing outputs (important for avoiding cached results)
+            outputBuffer[0].fill(0.0f)
 
-            // Map results to emotions
-            println("anger"+outputBuffer[0][0])
-            println("joy"+outputBuffer[0][1])
-            println("sadness"+outputBuffer[0][2])
+            // Run inference using the correct Android TensorFlow Lite API
+            interpreter!!.run(inputBuffer, outputBuffer)
+
+            // The output is now in outputBuffer
+
+            val modelOutputs = outputBuffer[0]
+
+            Log.d("EmotionDetector", "Raw model outputs:")
+            Log.d("EmotionDetector", "Index 0 (Angry): ${modelOutputs[0]}")
+            Log.d("EmotionDetector", "Index 1 (Disgust→Angry): ${modelOutputs[1]}")
+            Log.d("EmotionDetector", "Index 2 (Fear→Sad): ${modelOutputs[2]}")
+            Log.d("EmotionDetector", "Index 3 (Happy): ${modelOutputs[3]}")
+            Log.d("EmotionDetector", "Index 4 (Sad): ${modelOutputs[4]}")
+            Log.d("EmotionDetector", "Index 5 (Surprise→Happy): ${modelOutputs[5]}")
+            Log.d("EmotionDetector", "Index 6 (Neutral): ${modelOutputs[6]}")
+
+            // Apply emotion mapping according to emotion_map_4
+            // Angry: max of indices 0 (Angry) and 1 (Disgust)
+            val angerValue = maxOf(modelOutputs[0], modelOutputs[1])
+
+            // Sad: max of indices 2 (Fear) and 4 (Sad)
+            val sadValue = maxOf(modelOutputs[2], modelOutputs[4])
+
+            // Happy: max of indices 3 (Happy) and 5 (Surprise)
+            val happyValue = maxOf(modelOutputs[3], modelOutputs[5])
+
+            // Neutral: index 6 (Neutral)
+            val neutralValue = modelOutputs[6]
+
+            Log.d("EmotionDetector", "Final mapped emotions:")
+            Log.d("EmotionDetector", "Anger: $angerValue")
+            Log.d("EmotionDetector", "Happy: $happyValue")
+            Log.d("EmotionDetector", "Neutral: $neutralValue")
+            Log.d("EmotionDetector", "Sad: $sadValue")
+
             return mapOf(
-                Emotion.JOY to outputBuffer[0][1],
-                Emotion.SADNESS to outputBuffer[0][2],
-                Emotion.ANGER to outputBuffer[0][0],
+                Emotion.ANGER to angerValue,
+                Emotion.JOY to happyValue,
+                Emotion.NEUTRAL to neutralValue,
+                Emotion.SADNESS to sadValue
             )
 
         } catch (e: Exception) {
@@ -403,13 +500,12 @@ class AndroidEmotionDetector(private val context: Context) : EmotionDetector {
             e.printStackTrace()
             return mockEmotionData()
         }
-    }
-
-    private fun mockEmotionData(): Map<Emotion, Float> {
+    }    private fun mockEmotionData(): Map<Emotion, Float> {
         return mapOf(
             Emotion.JOY to 0.7f,
             Emotion.SADNESS to 0.1f,
-            Emotion.ANGER to 0.05f,
+            Emotion.ANGER to 0.025f,
+            Emotion.NEUTRAL to 0.025f,
         )
     }
 
@@ -425,3 +521,324 @@ class AndroidEmotionDetector(private val context: Context) : EmotionDetector {
         Log.d("EmotionDetector", "EmotionDetector resources released.")
     }
 }
+//package com.reflect.app.ml
+//
+//import android.content.Context
+//import android.graphics.Bitmap
+//import android.graphics.BitmapFactory
+//import android.graphics.Canvas
+//import android.graphics.ColorMatrix
+//import android.graphics.ColorMatrixColorFilter
+//import android.graphics.Paint
+//import android.graphics.Rect
+//import android.util.Log
+//import androidx.annotation.OptIn
+//import androidx.camera.core.ExperimentalGetImage
+//import androidx.camera.core.ImageProxy
+//import com.google.mlkit.vision.common.InputImage
+//import com.google.mlkit.vision.face.FaceDetection
+//import com.google.mlkit.vision.face.FaceDetector
+//import com.google.mlkit.vision.face.FaceDetectorOptions
+//import kotlinx.coroutines.suspendCancellableCoroutine
+//import org.tensorflow.lite.Interpreter
+//import org.tensorflow.lite.gpu.CompatibilityList
+//import org.tensorflow.lite.gpu.GpuDelegate
+//import java.nio.ByteBuffer
+//import java.nio.ByteOrder
+//import java.nio.channels.FileChannel
+//import kotlin.coroutines.resume
+//import kotlin.coroutines.resumeWithException
+//
+//class AndroidEmotionDetector(private val context: Context) : EmotionDetector {
+//    private var interpreter: Interpreter? = null
+//    private var gpuDelegate: GpuDelegate? = null
+//    private lateinit var faceDetector: FaceDetector
+//
+//    // Model input parameters
+//    private var targetSize = 64  // Will be updated from model
+//    private val CHANNELS = 1     // Grayscale input
+//    private val EMOTION_COUNT = 7
+//
+//    // Emotion mappings
+//    private val emotions = mapOf(
+//        0 to Pair(Emotion.ANGER, "Angry"),
+//        1 to Pair(Emotion.ANGER, "Angry"),  // Disgust mapped to Angry
+//        2 to Pair(Emotion.SADNESS, "Sad"),  // Fear mapped to Sad
+//        3 to Pair(Emotion.JOY, "Happy"),
+//        4 to Pair(Emotion.SADNESS, "Sad"),
+//        5 to Pair(Emotion.JOY, "Happy"),    // Surprise mapped to Happy
+//        6 to Pair(Emotion.NEUTRAL, "Neutral")
+//    )
+//
+//    init {
+//        try {
+//            // Setup face detector
+//            val options = FaceDetectorOptions.Builder()
+//                .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_ACCURATE)
+//                .setMinFaceSize(0.1f)
+//                .build()
+//
+//            faceDetector = FaceDetection.getClient(options)
+//
+//            // Load TFLite model
+//            setupModel()
+//        } catch (e: Exception) {
+//            Log.e("EmotionDetector", "Error initializing", e)
+//        }
+//    }
+//
+//    private fun setupModel() {
+//        try {
+//            val fileDescriptor = context.assets.openFd("emotionModel.tflite")
+//            val inputStream = fileDescriptor.createInputStream()
+//            val fileChannel = inputStream.channel
+//            val startOffset = fileDescriptor.startOffset
+//            val declaredLength = fileDescriptor.declaredLength
+//            val model = fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength)
+//
+//            val options = Interpreter.Options()
+//
+//            // Use GPU if available
+//            if (CompatibilityList().isDelegateSupportedOnThisDevice) {
+//                gpuDelegate = GpuDelegate()
+//                options.addDelegate(gpuDelegate)
+//            }
+//
+//            interpreter = Interpreter(model, options)
+//
+//            // Get the actual input shape from the model
+//            getModelInputDetails()
+//
+//            Log.d("EmotionDetector", "Model loaded successfully. Target size: $targetSize")
+//        } catch (e: Exception) {
+//            Log.e("EmotionDetector", "Failed to load model", e)
+//            interpreter = null
+//        }
+//    }
+//
+//    private fun getModelInputDetails() {
+//        interpreter?.let { interp ->
+//            val inputTensor = interp.getInputTensor(0)
+//            val inputShape = inputTensor.shape()
+//
+//            // Update target size from model (assuming square input)
+//            if (inputShape.size >= 2) {
+//                targetSize = inputShape[1] // Height
+//                Log.d("EmotionDetector", "Model input shape: ${inputShape.contentToString()}")
+//            }
+//        }
+//    }
+//
+//    @OptIn(ExperimentalGetImage::class)
+//    override suspend fun detectFaceInImageProxy(imageProxyInput: Any): Boolean = suspendCancellableCoroutine { continuation ->
+//        val imageProxy = imageProxyInput as? ImageProxy ?: run {
+//            Log.e("EmotionDetector", "Invalid ImageProxy type")
+//            continuation.resume(false)
+//            return@suspendCancellableCoroutine
+//        }
+//
+//        continuation.invokeOnCancellation { imageProxy.close() }
+//
+//        val mediaImage = imageProxy.image ?: run {
+//            Log.e("EmotionDetector", "Null image in ImageProxy")
+//            continuation.resume(false)
+//            imageProxy.close()
+//            return@suspendCancellableCoroutine
+//        }
+//
+//        try {
+//            val inputImage = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
+//
+//            faceDetector.process(inputImage)
+//                .addOnSuccessListener { faces ->
+//                    if (continuation.isActive) continuation.resume(faces.isNotEmpty())
+//                }
+//                .addOnFailureListener { e ->
+//                    Log.e("EmotionDetector", "Face detection failed", e)
+//                    if (continuation.isActive) continuation.resume(false)
+//                }
+//                .addOnCompleteListener {
+//                    if (!continuation.isCancelled) imageProxy.close()
+//                }
+//        } catch (e: Exception) {
+//            Log.e("EmotionDetector", "Error processing ImageProxy", e)
+//            if (continuation.isActive) continuation.resume(false)
+//            if (!continuation.isCancelled) imageProxy.close()
+//        }
+//    }
+//
+//    override suspend fun detectFace(imageData: ByteArray, width: Int, height: Int): Boolean = suspendCancellableCoroutine { continuation ->
+//        try {
+//            val bitmap = BitmapFactory.decodeByteArray(imageData, 0, imageData.size)
+//                ?: run {
+//                    Log.e("EmotionDetector", "Failed to decode image data")
+//                    continuation.resume(false)
+//                    return@suspendCancellableCoroutine
+//                }
+//
+//            // Create InputImage from bitmap
+//            val image = InputImage.fromBitmap(bitmap, 0)
+//
+//            faceDetector.process(image)
+//                .addOnSuccessListener { faces ->
+//                    bitmap.recycle()
+//                    continuation.resume(faces.isNotEmpty())
+//                }
+//                .addOnFailureListener { e ->
+//                    Log.e("EmotionDetector", "Face detection failed", e)
+//                    bitmap.recycle()
+//                    continuation.resume(false)
+//                }
+//        } catch (e: Exception) {
+//            Log.e("EmotionDetector", "Error in detectFace", e)
+//            continuation.resume(false)
+//        }
+//    }
+//
+//    private fun toGrayscale(bitmap: Bitmap): Bitmap {
+//        val width = bitmap.width
+//        val height = bitmap.height
+//        val grayscaleBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+//
+//        val canvas = Canvas(grayscaleBitmap)
+//        val paint = Paint()
+//        val colorMatrix = ColorMatrix()
+//        colorMatrix.setSaturation(0f) // Convert to grayscale
+//        paint.colorFilter = ColorMatrixColorFilter(colorMatrix)
+//        canvas.drawBitmap(bitmap, 0f, 0f, paint)
+//
+//        return grayscaleBitmap
+//    }
+//
+//    override suspend fun detectEmotion(imageData: ByteArray, width: Int, height: Int): Map<Emotion, Float> {
+//        if (interpreter == null) {
+//            Log.d("EmotionDetector", "TFLite model not available, using mock data")
+//            return mockEmotionData()
+//        }
+//
+//        try {
+//            // Decode the image
+//            val bitmap = BitmapFactory.decodeByteArray(imageData, 0, imageData.size)
+//                ?: return mockEmotionData()
+//
+//            // Convert to grayscale first (like in Python)
+//            val grayBitmap = toGrayscale(bitmap)
+//
+//            // Detect faces
+//            val faces = detectFaces(grayBitmap)
+//
+//            if (faces.isEmpty()) {
+//                Log.d("EmotionDetector", "No faces detected")
+//                bitmap.recycle()
+//                grayBitmap.recycle()
+//                return mockEmotionData()
+//            }
+//
+//            // Process the first face
+//            val (x, y, w, h) = faces[0]
+//
+//            // Crop the face region
+//            val faceBitmap = Bitmap.createBitmap(grayBitmap, x, y, w, h)
+//
+//            // Resize to target size
+//            val resizedFace = Bitmap.createScaledBitmap(faceBitmap, targetSize, targetSize, true)
+//            faceBitmap.recycle()
+//
+//            // Prepare input buffer
+//            val inputBuffer = prepareInputBuffer(resizedFace)
+//            resizedFace.recycle()
+//
+//            // Run inference
+//            val outputBuffer = Array(1) { FloatArray(EMOTION_COUNT) }
+//            interpreter!!.run(inputBuffer, outputBuffer)
+//
+//            // Map results
+//            val predictions = outputBuffer[0]
+//
+//            Log.d("EmotionDetector", "Raw predictions: ${predictions.contentToString()}")
+//
+//            // Map to final emotions
+//            val angerValue = maxOf(predictions[0], predictions[1])
+//            val sadValue = maxOf(predictions[2], predictions[4])
+//            val happyValue = maxOf(predictions[3], predictions[5])
+//            val neutralValue = predictions[6]
+//
+//            bitmap.recycle()
+//            grayBitmap.recycle()
+//
+//            return mapOf(
+//                Emotion.ANGER to angerValue,
+//                Emotion.JOY to happyValue,
+//                Emotion.NEUTRAL to neutralValue,
+//                Emotion.SADNESS to sadValue
+//            )
+//        } catch (e: Exception) {
+//            Log.e("EmotionDetector", "Error during emotion detection", e)
+//            return mockEmotionData()
+//        }
+//    }
+//
+//    private fun prepareInputBuffer(bitmap: Bitmap): ByteBuffer {
+//        val inputBuffer = ByteBuffer.allocateDirect(4 * targetSize * targetSize * CHANNELS)
+//        inputBuffer.order(ByteOrder.nativeOrder())
+//
+//        // Get pixel data
+//        val pixels = IntArray(targetSize * targetSize)
+//        bitmap.getPixels(pixels, 0, targetSize, 0, 0, targetSize, targetSize)
+//
+//        // Process pixels following the Python method
+//        for (pixel in pixels) {
+//            val gray = pixel and 0xFF
+//
+//            // Normalize to [0,1] then scale to [-1,1]
+//            val normalizedValue = (gray / 255.0f - 0.5f) * 2.0f
+//
+//            inputBuffer.putFloat(normalizedValue)
+//        }
+//
+//        inputBuffer.rewind()
+//        return inputBuffer
+//    }
+//
+//    private suspend fun detectFaces(bitmap: Bitmap): List<IntArray> = suspendCancellableCoroutine { continuation ->
+//        try {
+//            val image = InputImage.fromBitmap(bitmap, 0)
+//
+//            faceDetector.process(image)
+//                .addOnSuccessListener { faces ->
+//                    val faceRects = faces.map { face ->
+//                        val box = face.boundingBox
+//                        intArrayOf(box.left, box.top, box.width(), box.height())
+//                    }
+//                    continuation.resume(faceRects)
+//                }
+//                .addOnFailureListener { e ->
+//                    Log.e("EmotionDetector", "Face detection failed", e)
+//                    continuation.resume(emptyList())
+//                }
+//        } catch (e: Exception) {
+//            Log.e("EmotionDetector", "Error detecting faces", e)
+//            continuation.resume(emptyList())
+//        }
+//    }
+//
+//    private fun mockEmotionData(): Map<Emotion, Float> {
+//        return mapOf(
+//            Emotion.JOY to 0.7f,
+//            Emotion.SADNESS to 0.1f,
+//            Emotion.ANGER to 0.025f,
+//            Emotion.NEUTRAL to 0.025f,
+//        )
+//    }
+//
+//    override fun close() {
+//        interpreter?.close()
+//        gpuDelegate?.close()
+//        if (this::faceDetector.isInitialized) {
+//            faceDetector.close()
+//        }
+//        interpreter = null
+//        gpuDelegate = null
+//        Log.d("EmotionDetector", "EmotionDetector resources released.")
+//    }
+//}
